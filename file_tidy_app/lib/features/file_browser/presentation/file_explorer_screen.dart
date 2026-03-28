@@ -30,6 +30,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   bool _loading = false;
   List<FileItem> _items = [];
 
+  bool get _isPhoneEmptyState =>
+      _currentSource == FileSource.phone && _items.isEmpty;
+
   @override
   void initState() {
     super.initState();
@@ -166,6 +169,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
+          : _isPhoneEmptyState
+              ? _buildPhoneEmptyState()
           : isLandscape
               ? _buildLandscape()
               : _buildPortrait(),
@@ -219,6 +224,35 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           onTap: () => _openPreviewPortrait(item),
         );
       },
+    );
+  }
+
+  Widget _buildPhoneEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.file_open_outlined, size: 42),
+            const SizedBox(height: AppSpacing.md),
+            const Text(
+              'No phone files imported yet.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            const Text(
+              'Tap the button below to choose files from your phone.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppButton.primary(
+              label: 'Import from phone',
+              onPressed: _importLocalFiles,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -10,32 +10,7 @@ class InMemoryFileRepository implements FileRepository {
   final List<RenameRecord> _history = [];
 
   final Map<FileSource, List<FileItem>> _store = {
-    FileSource.phone: [
-      FileItem(
-        id: 'p1',
-        name: 'Travel',
-        type: FileItemType.folder,
-        source: FileSource.phone,
-      ),
-      FileItem(
-        id: 'p2',
-        name: 'IMG_4582.jpg',
-        type: FileItemType.image,
-        source: FileSource.phone,
-      ),
-      FileItem(
-        id: 'p3',
-        name: 'Contract_Steve_Nov.pdf',
-        type: FileItemType.pdf,
-        source: FileSource.phone,
-      ),
-      FileItem(
-        id: 'p4',
-        name: 'notes_draft_v3.txt',
-        type: FileItemType.text,
-        source: FileSource.phone,
-      ),
-    ],
+    FileSource.phone: [],
     FileSource.googleDrive: [
       FileItem(
         id: 'g1',
