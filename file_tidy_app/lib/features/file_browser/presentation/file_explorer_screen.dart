@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_tidy_app/app/app_router.dart';
 import 'package:file_tidy_app/app/dependency_container.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
+import 'package:file_tidy_app/core/models/local_folder_import_result.dart';
 import 'package:file_tidy_app/core/use_cases/get_ai_rename_suggestions_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/import_local_folder_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/import_local_files_use_case.dart';
@@ -158,7 +159,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     if (_currentSource != FileSource.phone) {
       return;
     }
-    final result = await _importLocalFolderUseCase();
+    final result = await _tryImportLocalFolder();
     if (!mounted) {
       return;
     }
@@ -178,6 +179,24 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Imported ${result.files.length} file(s) from folder.')),
     );
+  }
+
+  Future<LocalFolderImportResult?> _tryImportLocalFolder() async {
+    try {
+      return await _importLocalFolderUseCase();
+    } catch (_) {
+      if (!mounted) {
+        return null;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'This folder cannot be read on this phone. Try a subfolder inside Downloads, or use Import Files Only.',
+          ),
+        ),
+      );
+      return null;
+    }
   }
 
   Future<void> _openRenameSheet(FileItem item) async {
@@ -784,7 +803,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         title: const Text('Import options'),
         content: const Text(
           'Open Folder: lets you browse folders on the left panel.\n\n'
-          'Import Files Only: adds selected files directly into a flat list, without folder navigation.',
+          'Import Files Only: adds selected files directly into a flat list, without folder navigation.\n\n'
+          'Note: some phones do not allow selecting the root Downloads folder for app access. Select a subfolder or use Import Files Only.',
         ),
         actions: [
           TextButton(
