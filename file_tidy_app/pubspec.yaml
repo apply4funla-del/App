@@ -37,6 +37,7 @@ dependencies:
   lottie: ^3.3.2
   syncfusion_flutter_pdfviewer: ^33.1.45
   file_picker: ^10.3.10
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:
