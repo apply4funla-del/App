@@ -2,11 +2,15 @@ import 'dart:io';
 
 import 'package:file_tidy_app/app/app_router.dart';
 import 'package:file_tidy_app/app/dependency_container.dart';
+import 'package:file_tidy_app/core/config/feature_flags.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/models/local_folder_import_result.dart';
+import 'package:file_tidy_app/core/models/rename_operation_mode.dart';
+import 'package:file_tidy_app/core/use_cases/duplicate_file_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/get_ai_rename_suggestions_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/import_local_folder_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/import_local_files_use_case.dart';
+import 'package:file_tidy_app/core/use_cases/replace_originals_with_duplicates_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/rename_file_use_case.dart';
 import 'package:file_tidy_app/design_system/components/app_button.dart';
 import 'package:file_tidy_app/design_system/components/app_text_input.dart';
@@ -27,6 +31,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   final _dependencies = DependencyContainer.instance;
 
   late final RenameFileUseCase _renameFileUseCase;
+  late final DuplicateFileUseCase _duplicateFileUseCase;
+  late final ReplaceOriginalsWithDuplicatesUseCase _replaceOriginalsWithDuplicatesUseCase;
   late final GetAiRenameSuggestionsUseCase _getAiRenameSuggestionsUseCase;
   late final ImportLocalFilesUseCase _importLocalFilesUseCase;
   late final ImportLocalFolderUseCase _importLocalFolderUseCase;
@@ -41,6 +47,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   String? _phoneRootPath;
   String? _phoneCurrentPath;
   bool _phoneFolderBrowsingEnabled = false;
+  RenameOperationMode _operationMode = RenameOperationMode.workInPlace;
 
   bool get _isPhoneEmptyState =>
       _currentSource == FileSource.phone && _items.isEmpty;
@@ -59,6 +66,10 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     super.initState();
     _renameController = TextEditingController();
     _renameFileUseCase = RenameFileUseCase(_dependencies.fileRepository);
+    _duplicateFileUseCase = DuplicateFileUseCase(_dependencies.fileRepository);
+    _replaceOriginalsWithDuplicatesUseCase = ReplaceOriginalsWithDuplicatesUseCase(
+      _dependencies.fileRepository,
+    );
     _getAiRenameSuggestionsUseCase = GetAiRenameSuggestionsUseCase(
       _dependencies.aiRenameService,
     );
@@ -205,6 +216,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       isScrollControlled: true,
       builder: (_) => RenameSheet(
         currentName: item.name,
+        confirmLabel: _operationMode == RenameOperationMode.workInPlace
+            ? 'Confirm rename'
+            : 'Create duplicate',
         suggestionsLoader: () => _getAiRenameSuggestionsUseCase(
           currentName: item.name,
           context: item.type.name,
@@ -215,14 +229,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       return;
     }
 
-    await _renameFileUseCase(fileId: item.id, newName: value);
-    await _loadItems();
-    if (!mounted) {
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Renamed to "$value"')),
-    );
+    await _applyRenameChange(item: item, newName: value);
   }
 
   Future<void> _renameInstantlyFromLeft() async {
@@ -234,14 +241,51 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     if (value.isEmpty || value == item.name) {
       return;
     }
-    await _renameFileUseCase(fileId: item.id, newName: value);
+    await _applyRenameChange(item: item, newName: value);
+  }
+
+  Future<void> _applyRenameChange({
+    required FileItem item,
+    required String newName,
+  }) async {
+    if (_operationMode == RenameOperationMode.workInPlace) {
+      await _renameFileUseCase(fileId: item.id, newName: newName);
+      await _loadItems();
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Renamed to "$newName"')),
+      );
+      return;
+    }
+
+    await _duplicateFileUseCase(fileId: item.id, newName: newName);
     await _loadItems();
     if (!mounted) {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Renamed to "$value"')),
+      SnackBar(content: Text('Duplicate created as "$newName"')),
     );
+  }
+
+  Future<void> _replaceCurrentFolderOriginals() async {
+    if (_currentSource != FileSource.phone || _phoneCurrentPath == null) {
+      return;
+    }
+    final replaced = await _replaceOriginalsWithDuplicatesUseCase(
+      source: _currentSource,
+      parentPath: _phoneCurrentPath!,
+    );
+    await _loadItems();
+    if (!mounted) {
+      return;
+    }
+    final label = replaced == 0
+        ? 'No duplicate pairs found in this folder.'
+        : 'Replaced $replaced original file(s) with duplicates.';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(label)));
   }
 
   Future<void> _openPreviewPortrait(FileItem item) async {
@@ -253,6 +297,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       MaterialPageRoute<void>(
         builder: (_) => FilePreviewScreen(
           item: item,
+          renameActionLabel: _operationMode == RenameOperationMode.workInPlace
+              ? 'Rename'
+              : 'Create Duplicate',
           onRenamePressed: () async {
             Navigator.of(context).pop();
             await _openRenameSheet(item);
@@ -404,6 +451,12 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       appBar: AppBar(
         title: const Text('Explorer'),
         actions: [
+          if (FeatureFlags.enableUsbArchive)
+            IconButton(
+              icon: const Icon(Icons.usb_outlined),
+              tooltip: 'USB archive',
+              onPressed: () => Navigator.of(context).pushNamed(AppRoutes.usbArchive),
+            ),
           if (_currentSource == FileSource.phone)
             PopupMenuButton<String>(
               tooltip: 'Phone import options',
@@ -557,6 +610,20 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       children: [
         if (_currentSource == FileSource.phone)
           _buildPhoneModeHint(),
+        _buildOperationModePicker(),
+        if (_operationMode == RenameOperationMode.duplicate &&
+            _currentSource == FileSource.phone &&
+            _phoneCurrentPath != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
+            child: SizedBox(
+              width: double.infinity,
+              child: AppButton.secondary(
+                label: 'Replace Originals In Folder',
+                onPressed: _replaceCurrentFolderOriginals,
+              ),
+            ),
+          ),
         if (_currentSource == FileSource.phone && _phoneCurrentPath != null)
           ListTile(
             leading: const Icon(Icons.folder_open_outlined),
@@ -577,7 +644,13 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               return ListTile(
                 leading: _iconFor(item.type),
                 title: Text(item.name),
-                subtitle: Text(item.type == FileItemType.folder ? item.type.name : item.parentPath),
+                subtitle: Text(
+                  item.type == FileItemType.folder
+                      ? item.type.name
+                      : item.duplicateOfFileId != null
+                          ? 'Duplicate copy • ${item.parentPath}'
+                          : item.parentPath,
+                ),
                 trailing: item.type == FileItemType.folder
                     ? null
                     : IconButton(
@@ -646,6 +719,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
             children: [
               if (_currentSource == FileSource.phone)
                 _buildPhoneModeHint(),
+              _buildOperationModePicker(),
               if (_currentSource == FileSource.phone && _phoneCurrentPath != null)
                 ListTile(
                   leading: const Icon(Icons.folder_open_outlined),
@@ -670,7 +744,13 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                         selected: selected,
                         leading: _iconFor(item.type),
                         title: Text(item.name),
-                        subtitle: Text(item.type == FileItemType.folder ? item.type.name : item.parentPath),
+                        subtitle: Text(
+                          item.type == FileItemType.folder
+                              ? item.type.name
+                              : item.duplicateOfFileId != null
+                                  ? 'Duplicate copy • ${item.parentPath}'
+                                  : item.parentPath,
+                        ),
                       ),
                     );
                   },
@@ -689,10 +769,24 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: AppButton.primary(
-                          label: 'Rename',
+                          label: _operationMode == RenameOperationMode.workInPlace
+                              ? 'Rename'
+                              : 'Create Duplicate',
                           onPressed: _renameInstantlyFromLeft,
                         ),
                       ),
+                      if (_operationMode == RenameOperationMode.duplicate &&
+                          _currentSource == FileSource.phone &&
+                          _phoneCurrentPath != null) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        SizedBox(
+                          width: double.infinity,
+                          child: AppButton.secondary(
+                            label: 'Replace Originals In Folder',
+                            onPressed: _replaceCurrentFolderOriginals,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -727,7 +821,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                           SizedBox(
                             width: double.infinity,
                             child: AppButton.primary(
-                              label: 'Rename (sheet)',
+                              label: _operationMode == RenameOperationMode.workInPlace
+                                  ? 'Rename (sheet)'
+                                  : 'Duplicate (sheet)',
                               onPressed: _previewItem == null || _previewItem!.type == FileItemType.folder
                                   ? null
                                   : () => _openRenameSheet(_previewItem!),
@@ -747,7 +843,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: AppButton.primary(
-                            label: 'Rename (sheet)',
+                            label: _operationMode == RenameOperationMode.workInPlace
+                                ? 'Rename (sheet)'
+                                : 'Duplicate (sheet)',
                             onPressed: _previewItem == null || _previewItem!.type == FileItemType.folder
                                 ? null
                                 : () => _openRenameSheet(_previewItem!),
@@ -780,6 +878,43 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     }
   }
 
+  Widget _buildOperationModePicker() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Mode'),
+          const SizedBox(height: AppSpacing.xs),
+          SegmentedButton<RenameOperationMode>(
+            segments: RenameOperationMode.values
+                .map(
+                  (mode) => ButtonSegment<RenameOperationMode>(
+                    value: mode,
+                    label: Text(mode.label),
+                  ),
+                )
+                .toList(),
+            selected: {_operationMode},
+            onSelectionChanged: (values) {
+              if (values.isEmpty) {
+                return;
+              }
+              setState(() => _operationMode = values.first);
+            },
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            _operationMode == RenameOperationMode.workInPlace
+                ? 'Edits original files directly.'
+                : 'Creates renamed copies and keeps originals until you replace them.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPhoneModeHint() {
     final text = _phoneFolderBrowsingEnabled
         ? 'Mode: Folder browsing. Double-tap a file to open it on the right.'
@@ -807,9 +942,12 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           'Note: some phones do not allow selecting the root Downloads folder for app access. Select a subfolder or use Import Files Only.',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+          SizedBox(
+            width: 100,
+            child: AppButton.secondary(
+              label: 'Close',
+              onPressed: () => Navigator.of(context).pop(),
+            ),
           ),
         ],
       ),

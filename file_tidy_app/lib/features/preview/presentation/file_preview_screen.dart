@@ -10,11 +10,13 @@ class FilePreviewScreen extends StatelessWidget {
     required this.item,
     required this.onRenamePressed,
     required this.onTidyUpPressed,
+    this.renameActionLabel = 'Rename',
   });
 
   final FileItem item;
   final VoidCallback onRenamePressed;
   final VoidCallback onTidyUpPressed;
+  final String renameActionLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +45,7 @@ class FilePreviewScreen extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         child: AppButton.primary(
-                          label: 'Rename',
+                          label: renameActionLabel,
                           onPressed: onRenamePressed,
                         ),
                       ),
@@ -61,7 +63,7 @@ class FilePreviewScreen extends StatelessWidget {
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: AppButton.primary(
-                        label: 'Rename',
+                        label: renameActionLabel,
                         onPressed: onRenamePressed,
                       ),
                     ),

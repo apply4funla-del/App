@@ -14,6 +14,16 @@ abstract class FileRepository {
     required String newName,
   });
 
+  Future<void> duplicateFile({
+    required String fileId,
+    required String newName,
+  });
+
+  Future<int> replaceOriginalsWithDuplicates({
+    required FileSource source,
+    required String parentPath,
+  });
+
   Future<List<RenameRecord>> listHistory();
 
   Future<void> undoRename(String recordId);

@@ -41,17 +41,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 itemCount: _records.length,
                 itemBuilder: (context, index) {
                   final record = _records[index];
+                  final title = switch (record.actionType) {
+                    RenameActionType.renameInPlace => '${record.beforeName} -> ${record.afterName}',
+                    RenameActionType.duplicateCreated => 'Duplicated ${record.beforeName} -> ${record.afterName}',
+                    RenameActionType.replaceWithDuplicate =>
+                      'Replaced ${record.beforeName} with ${record.afterName}',
+                  };
+                  final canUndo = record.actionType != RenameActionType.replaceWithDuplicate;
                   return Card(
                     child: ListTile(
-                      title: Text('${record.beforeName} -> ${record.afterName}'),
+                      title: Text(title),
                       subtitle: Text(record.createdAt.toString()),
-                      trailing: AppButton.secondary(
-                        label: 'Undo',
-                        onPressed: () async {
-                          await _repository.undoRename(record.id);
-                          await _refresh();
-                        },
-                      ),
+                      trailing: canUndo
+                          ? AppButton.secondary(
+                              label: 'Undo',
+                              onPressed: () async {
+                                await _repository.undoRename(record.id);
+                                await _refresh();
+                              },
+                            )
+                          : const Text('Locked'),
                     ),
                   );
                 },

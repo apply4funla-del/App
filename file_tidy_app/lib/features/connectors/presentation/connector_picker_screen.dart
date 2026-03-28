@@ -95,13 +95,19 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+            SizedBox(
+              width: 100,
+              child: AppButton.secondary(
+                label: 'Cancel',
+                onPressed: () => Navigator.of(context).pop(),
+              ),
             ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(controller.text),
-              child: const Text('Connect'),
+            SizedBox(
+              width: 100,
+              child: AppButton.primary(
+                label: 'Connect',
+                onPressed: () => Navigator.of(context).pop(controller.text),
+              ),
             ),
           ],
         );

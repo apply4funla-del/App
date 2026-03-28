@@ -9,10 +9,12 @@ class RenameSheet extends StatefulWidget {
     super.key,
     required this.currentName,
     required this.suggestionsLoader,
+    this.confirmLabel = 'Confirm rename',
   });
 
   final String currentName;
   final Future<List<String>> Function() suggestionsLoader;
+  final String confirmLabel;
 
   @override
   State<RenameSheet> createState() => _RenameSheetState();
@@ -124,7 +126,7 @@ class _RenameSheetState extends State<RenameSheet> with SingleTickerProviderStat
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: AppButton.primary(
-                      label: 'Confirm rename',
+                      label: widget.confirmLabel,
                       onPressed: () => Navigator.of(context).pop(_nameController.text.trim()),
                     ),
                   ),

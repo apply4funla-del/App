@@ -10,6 +10,7 @@ class FileItem {
     required this.source,
     this.path,
     this.parentPath = '/',
+    this.duplicateOfFileId,
     this.modifiedAt,
   });
 
@@ -19,11 +20,15 @@ class FileItem {
   final FileSource source;
   final String? path;
   final String parentPath;
+  final String? duplicateOfFileId;
   final DateTime? modifiedAt;
 
   FileItem copyWith({
     String? name,
     String? path,
+    String? parentPath,
+    String? duplicateOfFileId,
+    bool clearDuplicateOfFileId = false,
     DateTime? modifiedAt,
   }) {
     return FileItem(
@@ -32,7 +37,8 @@ class FileItem {
       type: type,
       source: source,
       path: path ?? this.path,
-      parentPath: parentPath,
+      parentPath: parentPath ?? this.parentPath,
+      duplicateOfFileId: clearDuplicateOfFileId ? null : (duplicateOfFileId ?? this.duplicateOfFileId),
       modifiedAt: modifiedAt ?? this.modifiedAt,
     );
   }
