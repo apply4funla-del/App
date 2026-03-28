@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:file_tidy_app/core/interfaces/file_repository.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/models/rename_record.dart';
@@ -82,6 +84,17 @@ class InMemoryFileRepository implements FileRepository {
   }
 
   @override
+  Future<void> addItems({
+    required FileSource source,
+    required List<FileItem> items,
+  }) async {
+    if (items.isEmpty) {
+      return;
+    }
+    _store[source] = [...(_store[source] ?? []), ...items];
+  }
+
+  @override
   Future<void> renameFile({
     required String fileId,
     required String newName,
@@ -93,7 +106,25 @@ class InMemoryFileRepository implements FileRepository {
       }
 
       final original = entry.value[index];
-      entry.value[index] = original.copyWith(name: newName, modifiedAt: DateTime.now());
+      String? nextPath = original.path;
+      if (original.path != null) {
+        final currentFile = File(original.path!);
+        if (currentFile.existsSync()) {
+          final renamedPath = '${currentFile.parent.path}${Platform.pathSeparator}$newName';
+          try {
+            final renamed = await currentFile.rename(renamedPath);
+            nextPath = renamed.path;
+          } catch (_) {
+            nextPath = original.path;
+          }
+        }
+      }
+
+      entry.value[index] = original.copyWith(
+        name: newName,
+        path: nextPath,
+        modifiedAt: DateTime.now(),
+      );
       _history.insert(
         0,
         RenameRecord(
@@ -101,6 +132,8 @@ class InMemoryFileRepository implements FileRepository {
           fileId: fileId,
           beforeName: original.name,
           afterName: newName,
+          beforePath: original.path,
+          afterPath: nextPath,
           createdAt: DateTime.now(),
         ),
       );
@@ -128,8 +161,23 @@ class InMemoryFileRepository implements FileRepository {
       }
 
       final original = entry.value[index];
+      String? nextPath = original.path;
+      if (original.path != null) {
+        final currentFile = File(original.path!);
+        if (currentFile.existsSync()) {
+          final renamedPath = '${currentFile.parent.path}${Platform.pathSeparator}${record.beforeName}';
+          try {
+            final renamed = await currentFile.rename(renamedPath);
+            nextPath = renamed.path;
+          } catch (_) {
+            nextPath = record.beforePath ?? original.path;
+          }
+        }
+      }
+
       entry.value[index] = original.copyWith(
         name: record.beforeName,
+        path: nextPath,
         modifiedAt: DateTime.now(),
       );
       _history.removeAt(recordIndex);

@@ -4,6 +4,11 @@ import 'package:file_tidy_app/core/models/rename_record.dart';
 abstract class FileRepository {
   Future<List<FileItem>> listItems(FileSource source);
 
+  Future<void> addItems({
+    required FileSource source,
+    required List<FileItem> items,
+  });
+
   Future<void> renameFile({
     required String fileId,
     required String newName,

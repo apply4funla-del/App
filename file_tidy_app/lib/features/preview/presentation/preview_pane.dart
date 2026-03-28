@@ -48,18 +48,60 @@ class PreviewPane extends StatelessWidget {
               const SizedBox(height: AppSpacing.xs),
               Text('Type: ${item!.type.name}'),
               const SizedBox(height: AppSpacing.lg),
-              const Expanded(
-                child: Center(
-                  child: Text(
-                    'Preview placeholder.\nPDF viewer opens automatically for real file paths.',
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
+              Expanded(child: _buildBody()),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (item?.path == null) {
+      return const Center(
+        child: Text(
+          'Preview placeholder.\nImport a local file for live content preview.',
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    final file = File(item!.path!);
+    if (!file.existsSync()) {
+      return const Center(
+        child: Text('File path is unavailable on this device.'),
+      );
+    }
+
+    if (item!.type == FileItemType.image) {
+      return InteractiveViewer(
+        child: Image.file(file, fit: BoxFit.contain),
+      );
+    }
+
+    if (item!.type == FileItemType.text || item!.type == FileItemType.document) {
+      return FutureBuilder<String>(
+        future: file.readAsString(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return const Center(
+              child: Text('Unable to read this text content.'),
+            );
+          }
+          final content = snapshot.data ?? '';
+          final preview = content.length > 5000 ? '${content.substring(0, 5000)}\n...' : content;
+          return SingleChildScrollView(
+            child: Text(preview),
+          );
+        },
+      );
+    }
+
+    return const Center(
+      child: Text('Preview available after provider connector integration.'),
     );
   }
 }

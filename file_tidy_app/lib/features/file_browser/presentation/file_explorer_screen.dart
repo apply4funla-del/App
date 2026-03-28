@@ -2,6 +2,7 @@ import 'package:file_tidy_app/app/app_router.dart';
 import 'package:file_tidy_app/app/dependency_container.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/use_cases/get_ai_rename_suggestions_use_case.dart';
+import 'package:file_tidy_app/core/use_cases/import_local_files_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/rename_file_use_case.dart';
 import 'package:file_tidy_app/design_system/components/app_button.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
@@ -22,6 +23,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   late final RenameFileUseCase _renameFileUseCase;
   late final GetAiRenameSuggestionsUseCase _getAiRenameSuggestionsUseCase;
+  late final ImportLocalFilesUseCase _importLocalFilesUseCase;
 
   FileSource _currentSource = FileSource.phone;
   FileItem? _selectedItem;
@@ -35,6 +37,10 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     _getAiRenameSuggestionsUseCase = GetAiRenameSuggestionsUseCase(
       _dependencies.aiRenameService,
     );
+    _importLocalFilesUseCase = ImportLocalFilesUseCase(
+      _dependencies.localFilePickerService,
+      _dependencies.fileRepository,
+    );
     _loadItems();
   }
 
@@ -46,9 +52,34 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     }
     setState(() {
       _items = values;
-      _selectedItem = values.where((item) => item.type != FileItemType.folder).firstOrNull;
+      _selectedItem = values
+          .where((item) => item.type != FileItemType.folder)
+          .firstOrNull;
       _loading = false;
     });
+  }
+
+  Future<void> _importLocalFiles() async {
+    if (_currentSource != FileSource.phone) {
+      return;
+    }
+    final files = await _importLocalFilesUseCase();
+    if (!mounted) {
+      return;
+    }
+    if (files.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No files imported.')),
+      );
+      return;
+    }
+    await _loadItems();
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Imported ${files.length} file(s).')),
+    );
   }
 
   Future<void> _openRenameSheet(FileItem item) async {
@@ -104,6 +135,12 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       appBar: AppBar(
         title: const Text('Explorer'),
         actions: [
+          if (_currentSource == FileSource.phone)
+            IconButton(
+              icon: const Icon(Icons.file_open_outlined),
+              tooltip: 'Import files',
+              onPressed: _importLocalFiles,
+            ),
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.md),
             child: DropdownButton<FileSource>(
