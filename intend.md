@@ -15,6 +15,7 @@ We are building a mobile-first file organization app that turns file cleanup fro
 - User must explicitly choose folders to process.
 - AI suggests names, but user always confirms before rename.
 - Manual rename is always available.
+- AI is optional. The app must still deliver strong value without AI.
 
 ## Main problems this app solves
 - People cannot tell what a file is from a messy filename.
@@ -40,6 +41,10 @@ We are building a mobile-first file organization app that turns file cleanup fro
 - Use secure sign-in and limited permissions.
 - Let user choose which folders the app can access.
 - Show connected accounts and easy disconnect option.
+- Default processing modes:
+  - Manual mode: only file user opens.
+  - Semi-auto mode: only user-selected folders.
+  - Never full-account silent crawl.
 
 ## Privacy requirements (non-negotiable)
 - Clear consent before processing files.
@@ -48,6 +53,16 @@ We are building a mobile-first file organization app that turns file cleanup fro
 - Provide a privacy screen that explains what is processed.
 - Provide a one-tap "delete my app data" action.
 - Keep activity history so users can review and undo changes.
+- Local-first option must exist for users who do not want AI.
+- Data minimization: send only required snippet/data for AI suggestion.
+- No full file upload by default for rename suggestions.
+
+## Security and key handling requirements (non-negotiable)
+- Supabase public client key can be in app.
+- Supabase service role key must never be in app.
+- AI provider key must never be in app.
+- All secret keys must stay server-side only.
+- Enforce strict per-user access rules in database.
 
 ## Product scope by release
 
@@ -72,6 +87,8 @@ We are building a mobile-first file organization app that turns file cleanup fro
 | Tidy Up non-AI | Rename/group by date/type/location info | 5 |
 | Tidy Up AI | Smarter names and short summary | 4 |
 | Travel photo grouping | Group by trip/day/place | 4 |
+| Naming templates | Reuse naming format rules | 5 |
+| Batch rename | Rename many files in one flow | 5 |
 | Privacy center | Transparent controls | 5 |
 | Delete my data | User can clear app data | 5 |
 
@@ -97,11 +114,19 @@ We are building a mobile-first file organization app that turns file cleanup fro
 - Do not promise impossible device restrictions like "only this app can read the USB" across all phones.
 
 ## Monetization direction
-- Free tier: manual rename + limited AI usage.
-- Paid tier: more AI renames, batch tidy, naming templates, advanced history.
-- Optional credit packs for high AI usage.
+- Two paid paths:
+  - Pro Local (no AI needed): batch tidy, naming templates, advanced history, better backup tools.
+  - Pro AI add-on: AI renames, AI summaries, extra AI credits.
+- Free tier: manual rename, preview, non-AI basic tidy, limited AI trials.
+- Optional credit packs for high AI usage without subscription.
 - Optional hardware bundle margin from branded USB product.
 - Ads are not preferred for this product because they reduce trust in a privacy-sensitive app.
+
+## Retention strategy for non-AI users (locked)
+- Personalized naming templates and folder presets.
+- Reliable undo and rename history.
+- Strong archive and restore workflow with USB support.
+- Clean ad-light experience to preserve trust.
 
 ## Quality and success targets
 - Median time from opening a file to completed rename under 10 seconds.
