@@ -39,9 +39,19 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   String? _phoneRootPath;
   String? _phoneCurrentPath;
+  bool _phoneFolderBrowsingEnabled = false;
 
   bool get _isPhoneEmptyState =>
       _currentSource == FileSource.phone && _items.isEmpty;
+
+  List<FileItem> get _currentPhoneEntries {
+    if (!_phoneFolderBrowsingEnabled || _phoneCurrentPath == null) {
+      final values = [..._items];
+      values.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      return values;
+    }
+    return _visiblePhoneEntries();
+  }
 
   @override
   void initState() {
@@ -78,7 +88,12 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     setState(() {
       _items = values;
       if (_currentSource == FileSource.phone) {
-        _syncPhoneNavigation(values);
+        if (_phoneFolderBrowsingEnabled) {
+          _syncPhoneNavigation(values);
+        } else {
+          _focusedItem = values.where((item) => item.type != FileItemType.folder).firstOrNull;
+          _previewItem = _focusedItem;
+        }
       } else {
         _focusedItem = values.where((item) => item.type != FileItemType.folder).firstOrNull;
         _previewItem = _focusedItem;
@@ -127,8 +142,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       );
       return;
     }
-    _phoneRootPath ??= _deriveCommonRootPath(files);
-    _phoneCurrentPath ??= _phoneRootPath;
+    _phoneFolderBrowsingEnabled = false;
+    _phoneRootPath = null;
+    _phoneCurrentPath = null;
     await _loadItems();
     if (!mounted) {
       return;
@@ -154,6 +170,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     }
     _phoneRootPath = result.rootPath;
     _phoneCurrentPath = result.rootPath;
+    _phoneFolderBrowsingEnabled = true;
     await _loadItems();
     if (!mounted) {
       return;
@@ -229,7 +246,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   }
 
   void _navigateIntoFolder(String folderPath) {
-    if (_currentSource != FileSource.phone) {
+    if (_currentSource != FileSource.phone || !_phoneFolderBrowsingEnabled) {
       return;
     }
     setState(() {
@@ -246,6 +263,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   void _goUpOneFolder() {
     if (_currentSource != FileSource.phone ||
+        !_phoneFolderBrowsingEnabled ||
         _phoneCurrentPath == null ||
         _phoneRootPath == null ||
         _phoneCurrentPath == _phoneRootPath) {
@@ -368,16 +386,45 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         title: const Text('Explorer'),
         actions: [
           if (_currentSource == FileSource.phone)
-            IconButton(
-              icon: const Icon(Icons.file_open_outlined),
-              tooltip: 'Import file(s)',
-              onPressed: _importLocalFiles,
-            ),
-          if (_currentSource == FileSource.phone)
-            IconButton(
-              icon: const Icon(Icons.drive_folder_upload_outlined),
-              tooltip: 'Import folder',
-              onPressed: _importLocalFolder,
+            PopupMenuButton<String>(
+              tooltip: 'Phone import options',
+              onSelected: (value) {
+                if (value == 'folder') {
+                  _importLocalFolder();
+                  return;
+                }
+                if (value == 'files') {
+                  _importLocalFiles();
+                  return;
+                }
+                _showImportHelp();
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem<String>(
+                  value: 'folder',
+                  child: Text('Open Folder (browse folders/files)'),
+                ),
+                PopupMenuItem<String>(
+                  value: 'files',
+                  child: Text('Import Files Only (flat list)'),
+                ),
+                PopupMenuItem<String>(
+                  value: 'help',
+                  child: Text('What is the difference?'),
+                ),
+              ],
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                child: Row(
+                  children: [
+                    Icon(Icons.file_open_outlined),
+                    SizedBox(width: AppSpacing.xs),
+                    Text('Import'),
+                    SizedBox(width: AppSpacing.xs),
+                    Icon(Icons.expand_more, size: 18),
+                  ],
+                ),
+              ),
             ),
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.md),
@@ -393,6 +440,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                   _previewItem = null;
                   if (value != FileSource.phone) {
                     _phoneCurrentPath = null;
+                    _phoneRootPath = null;
+                    _phoneFolderBrowsingEnabled = false;
                   }
                 });
                 await _loadItems();
@@ -484,9 +533,11 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   }
 
   Widget _buildPortrait() {
-    final entries = _currentSource == FileSource.phone ? _visiblePhoneEntries() : _items;
+    final entries = _currentSource == FileSource.phone ? _currentPhoneEntries : _items;
     return Column(
       children: [
+        if (_currentSource == FileSource.phone)
+          _buildPhoneModeHint(),
         if (_currentSource == FileSource.phone && _phoneCurrentPath != null)
           ListTile(
             leading: const Icon(Icons.folder_open_outlined),
@@ -566,7 +617,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   }
 
   Widget _buildLandscape() {
-    final entries = _currentSource == FileSource.phone ? _visiblePhoneEntries() : _items;
+    final entries = _currentSource == FileSource.phone ? _currentPhoneEntries : _items;
 
     return Row(
       children: [
@@ -574,6 +625,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           flex: 4,
           child: Column(
             children: [
+              if (_currentSource == FileSource.phone)
+                _buildPhoneModeHint(),
               if (_currentSource == FileSource.phone && _phoneCurrentPath != null)
                 ListTile(
                   leading: const Icon(Icons.folder_open_outlined),
@@ -706,5 +759,40 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       case FileItemType.document:
         return const Icon(Icons.description_outlined);
     }
+  }
+
+  Widget _buildPhoneModeHint() {
+    final text = _phoneFolderBrowsingEnabled
+        ? 'Mode: Folder browsing. Double-tap a file to open it on the right.'
+        : 'Mode: Files only. Use Import > Open Folder to browse folders.';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          text,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showImportHelp() async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Import options'),
+        content: const Text(
+          'Open Folder: lets you browse folders on the left panel.\n\n'
+          'Import Files Only: adds selected files directly into a flat list, without folder navigation.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 }
