@@ -117,15 +117,14 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: ListView(
                 children: [
                   const Text(
                     'Connect only the sources you need. You can disconnect anytime.',
                   ),
                   const SizedBox(height: AppSpacing.md),
                   ...FileSource.values.map((source) => _buildConnectorCard(source)),
-                  const Spacer(),
+                  const SizedBox(height: AppSpacing.md),
                   SizedBox(
                     width: double.infinity,
                     child: AppButton.primary(
@@ -143,38 +142,47 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
     final state = _states[source];
     final connected = state?.connected ?? (source == FileSource.phone);
     final label = state?.accountLabel;
+    final action = source == FileSource.phone
+        ? const Text('Always On')
+        : connected
+            ? AppButton.secondary(
+                label: 'Disconnect',
+                onPressed: () => _disconnect(source),
+              )
+            : AppButton.primary(
+                label: 'Connect',
+                onPressed: () => _connect(source),
+              );
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(_iconFor(source)),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(source.label, style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    connected ? 'Connected${label == null ? '' : ' as $label'}' : 'Not connected',
+            Row(
+              children: [
+                Icon(_iconFor(source)),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(source.label, style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        connected ? 'Connected${label == null ? '' : ' as $label'}' : 'Not connected',
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            if (source == FileSource.phone)
-              const Text('Always On')
-            else if (connected)
-              AppButton.secondary(
-                label: 'Disconnect',
-                onPressed: () => _disconnect(source),
-              )
-            else
-              AppButton.primary(
-                label: 'Connect',
-                onPressed: () => _connect(source),
-              ),
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: Alignment.centerRight,
+              child: action,
+            ),
           ],
         ),
       ),

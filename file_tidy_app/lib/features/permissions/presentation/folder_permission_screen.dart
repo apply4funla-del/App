@@ -22,40 +22,32 @@ class _FolderPermissionScreenState extends State<FolderPermissionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Choose folders')),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Only selected folders will be processed.'),
-            const SizedBox(height: AppSpacing.sm),
-            Expanded(
-              child: ListView(
-                children: _folders.entries
-                    .map(
-                      (entry) => CheckboxListTile(
-                        value: entry.value,
-                        onChanged: (value) => setState(
-                          () => _folders[entry.key] = value ?? false,
-                        ),
-                        title: Text(entry.key),
-                      ),
-                    )
-                    .toList(),
+        children: [
+          const Text('Only selected folders will be processed.'),
+          const SizedBox(height: AppSpacing.sm),
+          ..._folders.entries.map(
+            (entry) => CheckboxListTile(
+              value: entry.value,
+              onChanged: (value) => setState(
+                () => _folders[entry.key] = value ?? false,
+              ),
+              title: Text(entry.key),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            child: AppButton.primary(
+              label: 'Open explorer',
+              onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil(
+                AppRoutes.explorer,
+                (route) => false,
               ),
             ),
-            SizedBox(
-              width: double.infinity,
-              child: AppButton.primary(
-                label: 'Open explorer',
-                onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil(
-                  AppRoutes.explorer,
-                  (route) => false,
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

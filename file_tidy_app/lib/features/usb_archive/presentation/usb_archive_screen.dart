@@ -9,20 +9,17 @@ class UsbArchiveScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('USB Archive')),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Use branded USB-C stick for easy archive/restore.'),
-            const SizedBox(height: AppSpacing.md),
-            AppButton.secondary(label: 'Archive selected files', onPressed: () {}),
-            const SizedBox(height: AppSpacing.sm),
-            AppButton.secondary(label: 'Restore from USB', onPressed: () {}),
-            const SizedBox(height: AppSpacing.sm),
-            AppButton.primary(label: 'Verify copied files', onPressed: () {}),
-          ],
-        ),
+        children: [
+          const Text('Use branded USB-C stick for easy archive/restore.'),
+          const SizedBox(height: AppSpacing.md),
+          AppButton.secondary(label: 'Archive selected files', onPressed: () {}),
+          const SizedBox(height: AppSpacing.sm),
+          AppButton.secondary(label: 'Restore from USB', onPressed: () {}),
+          const SizedBox(height: AppSpacing.sm),
+          AppButton.primary(label: 'Verify copied files', onPressed: () {}),
+        ],
       ),
     );
   }

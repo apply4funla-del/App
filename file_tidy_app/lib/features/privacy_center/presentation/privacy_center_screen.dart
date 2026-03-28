@@ -52,8 +52,7 @@ class _PrivacyCenterScreenState extends State<PrivacyCenterScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: ListView(
                 children: [
                   SwitchListTile(
                     value: _aiEnabled,
@@ -75,7 +74,7 @@ class _PrivacyCenterScreenState extends State<PrivacyCenterScreen> {
                   const Text('Allowed folders: user selected only'),
                   const SizedBox(height: AppSpacing.lg),
                   const Text('Data sent for AI: minimal snippets only'),
-                  const Spacer(),
+                  const SizedBox(height: AppSpacing.lg),
                   AppButton.secondary(label: 'Manage folders', onPressed: () {}),
                   const SizedBox(height: AppSpacing.sm),
                   AppButton.secondary(label: 'Disconnect accounts', onPressed: () {}),

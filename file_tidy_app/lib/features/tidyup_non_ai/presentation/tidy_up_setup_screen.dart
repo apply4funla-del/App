@@ -20,8 +20,7 @@ class _TidyUpSetupScreenState extends State<TidyUpSetupScreen> {
       appBar: AppBar(title: const Text('Tidy Up')),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: ListView(
           children: [
             const Text('Folder: /Travel/Japan'),
             const SizedBox(height: AppSpacing.md),
@@ -37,7 +36,7 @@ class _TidyUpSetupScreenState extends State<TidyUpSetupScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
             const Text('Rename style: Date + Place + Sequence'),
-            const Spacer(),
+            const SizedBox(height: AppSpacing.lg),
             SizedBox(
               width: double.infinity,
               child: AppButton.primary(

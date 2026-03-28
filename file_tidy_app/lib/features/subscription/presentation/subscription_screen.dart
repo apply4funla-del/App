@@ -8,27 +8,24 @@ class SubscriptionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Subscription')),
-      body: const Padding(
+      body: ListView(
         padding: EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Free'),
-            SizedBox(height: AppSpacing.xs),
-            Text('- Manual rename'),
-            Text('- Basic tidy up'),
-            SizedBox(height: AppSpacing.md),
-            Text('Pro Local'),
-            SizedBox(height: AppSpacing.xs),
-            Text('- Batch rename'),
-            Text('- Templates and history tools'),
-            SizedBox(height: AppSpacing.md),
-            Text('Pro AI add-on'),
-            SizedBox(height: AppSpacing.xs),
-            Text('- AI rename suggestions'),
-            Text('- AI folder summaries'),
-          ],
-        ),
+        children: [
+          Text('Free'),
+          SizedBox(height: AppSpacing.xs),
+          Text('- Manual rename'),
+          Text('- Basic tidy up'),
+          SizedBox(height: AppSpacing.md),
+          Text('Pro Local'),
+          SizedBox(height: AppSpacing.xs),
+          Text('- Batch rename'),
+          Text('- Templates and history tools'),
+          SizedBox(height: AppSpacing.md),
+          Text('Pro AI add-on'),
+          SizedBox(height: AppSpacing.xs),
+          Text('- AI rename suggestions'),
+          Text('- AI folder summaries'),
+        ],
       ),
     );
   }

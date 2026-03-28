@@ -11,29 +11,26 @@ class WelcomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
+        child: ListView(
           padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Spacer(),
-              const LottieSlot(fallbackIcon: Icons.auto_fix_high_outlined),
-              const SizedBox(height: AppSpacing.lg),
-              Text('Clean file names fast', style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: AppSpacing.sm),
-              const Text(
-                'Browse folders, preview files, and rename with manual control or AI suggestions.',
+          children: [
+            const SizedBox(height: AppSpacing.xl),
+            const LottieSlot(fallbackIcon: Icons.auto_fix_high_outlined),
+            const SizedBox(height: AppSpacing.lg),
+            Text('Clean file names fast', style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: AppSpacing.sm),
+            const Text(
+              'Browse folders, preview files, and rename with manual control or AI suggestions.',
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton.primary(
+                label: 'Get Started',
+                onPressed: () => Navigator.of(context).pushNamed(AppRoutes.signIn),
               ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: AppButton.primary(
-                  label: 'Get Started',
-                  onPressed: () => Navigator.of(context).pushNamed(AppRoutes.signIn),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

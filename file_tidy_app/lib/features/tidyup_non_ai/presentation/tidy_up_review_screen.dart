@@ -15,37 +15,26 @@ class TidyUpReviewScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Review Tidy Up')),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.separated(
-                itemCount: rows.length,
-                separatorBuilder: (context, index) => const Divider(),
-                itemBuilder: (context, index) {
-                  final row = rows[index];
-                  return ListTile(
-                    title: Text(row.$1),
-                    subtitle: Text('-> ${row.$2}'),
-                  );
-                },
-              ),
+        children: [
+          ...rows.map(
+            (row) => ListTile(
+              title: Text(row.$1),
+              subtitle: Text('-> ${row.$2}'),
             ),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text('Summary: Kyoto day 1 photos'),
+          ),
+          const Divider(),
+          const Text('Summary: Kyoto day 1 photos'),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            child: AppButton.primary(
+              label: 'Approve and apply',
+              onPressed: () => Navigator.of(context).pop(),
             ),
-            const SizedBox(height: AppSpacing.md),
-            SizedBox(
-              width: double.infinity,
-              child: AppButton.primary(
-                label: 'Approve and apply',
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

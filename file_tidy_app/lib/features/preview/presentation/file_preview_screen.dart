@@ -25,22 +25,49 @@ class FilePreviewScreen extends StatelessWidget {
           Expanded(child: PreviewPane(item: item)),
           Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              children: [
-                Expanded(
-                  child: AppButton.secondary(
-                    label: 'Tidy Up',
-                    onPressed: onTidyUpPressed,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: AppButton.primary(
-                    label: 'Rename',
-                    onPressed: onRenamePressed,
-                  ),
-                ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 420;
+                if (compact) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: AppButton.secondary(
+                          label: 'Tidy Up',
+                          onPressed: onTidyUpPressed,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      SizedBox(
+                        width: double.infinity,
+                        child: AppButton.primary(
+                          label: 'Rename',
+                          onPressed: onRenamePressed,
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(
+                      child: AppButton.secondary(
+                        label: 'Tidy Up',
+                        onPressed: onTidyUpPressed,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: AppButton.primary(
+                        label: 'Rename',
+                        onPressed: onRenamePressed,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],

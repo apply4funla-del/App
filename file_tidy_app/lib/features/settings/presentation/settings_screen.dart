@@ -12,8 +12,7 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Settings')),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: ListView(
           children: [
             const Text('Plan: Free'),
             const SizedBox(height: AppSpacing.sm),
@@ -26,7 +25,7 @@ class SettingsScreen extends StatelessWidget {
               label: 'USB Archive tools',
               onPressed: () => Navigator.of(context).pushNamed(AppRoutes.usbArchive),
             ),
-            const Spacer(),
+            const SizedBox(height: AppSpacing.lg),
             SizedBox(
               width: double.infinity,
               child: AppButton.primary(
