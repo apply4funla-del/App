@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Starter Web App</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <p class="eyebrow">New App Starter</p>
+        <h1>Build from a working base, not a blank page.</h1>
+        <p class="hero-copy">
+          This starter app is a simple task tracker that saves data in your
+          browser. Use it as the first version of your project, then expand it.
+        </p>
+      </section>
+
+      <section class="panel">
+        <form id="task-form" class="task-form">
+          <label class="field">
+            <span>Task name</span>
+            <input
+              id="task-input"
+              name="task"
+              type="text"
+              maxlength="80"
+              placeholder="Add your first task"
+              autocomplete="off"
+              required
+            />
+          </label>
+          <button type="submit" class="primary-button">Add Task</button>
+        </form>
+
+        <div class="toolbar">
+          <div class="status-block">
+            <span class="status-label">Progress</span>
+            <strong id="progress-label">0 of 0 complete</strong>
+          </div>
+
+          <div class="filter-group" aria-label="Task filters">
+            <button type="button" class="filter-button is-active" data-filter="all">
+              All
+            </button>
+            <button type="button" class="filter-button" data-filter="open">
+              Open
+            </button>
+            <button type="button" class="filter-button" data-filter="done">
+              Done
+            </button>
+          </div>
+        </div>
+
+        <ul id="task-list" class="task-list" aria-live="polite"></ul>
+      </section>
+    </main>
+
+    <template id="task-template">
+      <li class="task-item">
+        <label class="task-check">
+          <input type="checkbox" />
+          <span class="task-title"></span>
+        </label>
+        <button type="button" class="delete-button" aria-label="Delete task">
+          Delete
+        </button>
+      </li>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
