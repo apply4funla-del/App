@@ -16,6 +16,7 @@ We are building a mobile-first file organization app that turns file cleanup fro
 - AI suggests names, but user always confirms before rename.
 - Manual rename is always available.
 - AI is optional. The app must still deliver strong value without AI.
+- Architecture must be modular, expandable, and migratable.
 
 ## Main problems this app solves
 - People cannot tell what a file is from a messy filename.
@@ -63,6 +64,35 @@ We are building a mobile-first file organization app that turns file cleanup fro
 - AI provider key must never be in app.
 - All secret keys must stay server-side only.
 - Enforce strict per-user access rules in database.
+
+## Architecture principles (non-negotiable)
+
+### Modular architecture
+- Build in clear modules by responsibility, not one large code file.
+- Screens must be separate modules/pages and reusable where possible.
+- Login/auth must be isolated as its own module/widget.
+- File browser, preview pane, rename flow, and privacy center must each be independent modules.
+- Lottie animations must be integrated via reusable components, not copied ad hoc per screen.
+- No business logic inside UI layout widgets.
+
+### Centralized design system (non-negotiable)
+- No hardcoded style values in feature screens.
+- Fonts, colors, spacing, radii, shadows, and motion timings must come from centralized theme tokens.
+- Buttons, inputs, cards, and dialog patterns must come from shared UI components.
+- Keep text strings and labels centralized for easier updates/localization.
+
+### Expandable architecture
+- New features should be add-on modules with minimal edits to existing modules.
+- Use clear interface boundaries between UI, business logic, and data access.
+- Feature flags/config should allow controlled rollout of new capabilities.
+- Prefer plugin-style connector adapters so new providers can be added without rewriting core logic.
+
+### Migratable architecture
+- Never bind core business logic directly to Supabase or any single vendor SDK.
+- Use repository/interface layer for all storage and backend operations.
+- Keep vendor-specific code in adapter modules only.
+- Define stable domain models and mapping layers for provider-specific schemas.
+- Maintain data export/import pathways and migration scripts so backend can move to another platform.
 
 ## Product scope by release
 
