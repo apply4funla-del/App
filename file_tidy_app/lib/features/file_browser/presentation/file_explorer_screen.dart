@@ -2,6 +2,7 @@ import 'package:file_tidy_app/app/app_router.dart';
 import 'package:file_tidy_app/app/dependency_container.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/use_cases/get_ai_rename_suggestions_use_case.dart';
+import 'package:file_tidy_app/core/use_cases/import_local_folder_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/import_local_files_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/rename_file_use_case.dart';
 import 'package:file_tidy_app/design_system/components/app_button.dart';
@@ -24,6 +25,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   late final RenameFileUseCase _renameFileUseCase;
   late final GetAiRenameSuggestionsUseCase _getAiRenameSuggestionsUseCase;
   late final ImportLocalFilesUseCase _importLocalFilesUseCase;
+  late final ImportLocalFolderUseCase _importLocalFolderUseCase;
 
   FileSource _currentSource = FileSource.phone;
   FileItem? _selectedItem;
@@ -41,6 +43,10 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       _dependencies.aiRenameService,
     );
     _importLocalFilesUseCase = ImportLocalFilesUseCase(
+      _dependencies.localFilePickerService,
+      _dependencies.fileRepository,
+    );
+    _importLocalFolderUseCase = ImportLocalFolderUseCase(
       _dependencies.localFilePickerService,
       _dependencies.fileRepository,
     );
@@ -82,6 +88,29 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Imported ${files.length} file(s).')),
+    );
+  }
+
+  Future<void> _importLocalFolder() async {
+    if (_currentSource != FileSource.phone) {
+      return;
+    }
+    final files = await _importLocalFolderUseCase();
+    if (!mounted) {
+      return;
+    }
+    if (files.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No folder files imported.')),
+      );
+      return;
+    }
+    await _loadItems();
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Imported ${files.length} file(s) from folder.')),
     );
   }
 
@@ -141,8 +170,14 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           if (_currentSource == FileSource.phone)
             IconButton(
               icon: const Icon(Icons.file_open_outlined),
-              tooltip: 'Import files',
+              tooltip: 'Import file(s)',
               onPressed: _importLocalFiles,
+            ),
+          if (_currentSource == FileSource.phone)
+            IconButton(
+              icon: const Icon(Icons.drive_folder_upload_outlined),
+              tooltip: 'Import folder',
+              onPressed: _importLocalFolder,
             ),
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.md),
@@ -171,9 +206,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _isPhoneEmptyState
               ? _buildPhoneEmptyState()
-          : isLandscape
-              ? _buildLandscape()
-              : _buildPortrait(),
+              : isLandscape
+                  ? _buildLandscape()
+                  : _buildPortrait(),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.sm),
@@ -214,7 +249,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         return ListTile(
           leading: _iconFor(item.type),
           title: Text(item.name),
-          subtitle: Text(item.type.name),
+          subtitle: Text(item.type == FileItemType.folder ? item.type.name : item.parentPath),
           trailing: item.type == FileItemType.folder
               ? null
               : IconButton(
@@ -242,13 +277,18 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
             ),
             const SizedBox(height: AppSpacing.xs),
             const Text(
-              'Tap the button below to choose files from your phone.',
+              'Import a file or a whole folder from your phone.',
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.md),
             AppButton.primary(
-              label: 'Import from phone',
+              label: 'Import file(s)',
               onPressed: _importLocalFiles,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            AppButton.secondary(
+              label: 'Import folder',
+              onPressed: _importLocalFolder,
             ),
           ],
         ),
@@ -269,7 +309,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                 selected: _selectedItem?.id == item.id,
                 leading: _iconFor(item.type),
                 title: Text(item.name),
-                subtitle: Text(item.type.name),
+                subtitle: Text(item.type == FileItemType.folder ? item.type.name : item.parentPath),
                 onTap: () => setState(() => _selectedItem = item),
               );
             },
