@@ -75,6 +75,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     _importLocalFolderUseCase = ImportLocalFolderUseCase(
       _dependencies.localFilePickerService,
       _dependencies.fileRepository,
+      _dependencies.storagePermissionService,
     );
 
     _currentSource = widget.config.source;

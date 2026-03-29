@@ -32,6 +32,7 @@ class _UsbArchiveScreenState extends State<UsbArchiveScreen> {
     _importLocalFolderUseCase = ImportLocalFolderUseCase(
       _dependencies.localFilePickerService,
       _dependencies.fileRepository,
+      _dependencies.storagePermissionService,
     );
   }
 

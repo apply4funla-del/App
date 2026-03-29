@@ -33,6 +33,7 @@ class _FolderPermissionScreenState extends State<FolderPermissionScreen> {
     _importLocalFolderUseCase = ImportLocalFolderUseCase(
       _dependencies.localFilePickerService,
       _dependencies.fileRepository,
+      _dependencies.storagePermissionService,
     );
   }
 
