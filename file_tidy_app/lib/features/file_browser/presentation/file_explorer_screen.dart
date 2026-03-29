@@ -258,9 +258,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
-  void _openItemInSplit(FileItem item) {
+  Future<void> _openItemInSplit(FileItem item) async {
     if (_currentSource == FileSource.phone && item.type == FileItemType.folder) {
-      _navigateIntoFolder(item.path ?? _phoneCurrentPath ?? '');
+      await _navigateIntoFolder(item.path ?? _phoneCurrentPath ?? '');
       return;
     }
     setState(() {
@@ -269,7 +269,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     });
   }
 
-  void _navigateIntoFolder(String folderPath) {
+  Future<void> _navigateIntoFolder(String folderPath) async {
     if (_currentSource != FileSource.phone || !_phoneFolderBrowsingEnabled) {
       return;
     }
@@ -279,6 +279,16 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       _previewItem = null;
       final visible = _visiblePhoneEntries();
       if (visible.isNotEmpty) {
+        _focusedItem = visible.first;
+      }
+    });
+    await _hydratePhoneFolderBranchIfNeeded(folderPath);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      final visible = _visiblePhoneEntries();
+      if (visible.isNotEmpty && _focusedItem == null) {
         _focusedItem = visible.first;
       }
     });
@@ -374,6 +384,85 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     return [...folderItems, ...files];
   }
 
+  Future<void> _hydratePhoneFolderBranchIfNeeded(String folderPath) async {
+    if (_currentSource != FileSource.phone) {
+      return;
+    }
+    final normalizedFolderPath = _normalizePath(folderPath);
+    final separator = Platform.pathSeparator;
+    final normalizedPrefix = '$normalizedFolderPath$separator';
+    final alreadyLoaded = _items.any((item) {
+      final path = item.path;
+      if (path == null) {
+        return false;
+      }
+      final normalizedPath = _normalizePath(path);
+      final normalizedParent = _normalizePath(item.parentPath);
+      return normalizedParent == normalizedFolderPath ||
+          (normalizedPath != normalizedFolderPath && normalizedPath.startsWith(normalizedPrefix));
+    });
+
+    if (alreadyLoaded) {
+      return;
+    }
+
+    final directory = Directory(normalizedFolderPath);
+    if (!directory.existsSync()) {
+      return;
+    }
+
+    final loaded = <FileItem>[];
+    try {
+      final entities = directory.listSync(followLinks: false);
+      for (final entity in entities) {
+        if (entity is Directory) {
+          final normalizedPath = _normalizePath(entity.path);
+          loaded.add(
+            FileItem(
+              id: 'folder_$normalizedPath',
+              name: _folderDisplayName(normalizedPath),
+              type: FileItemType.folder,
+              source: FileSource.phone,
+              path: normalizedPath,
+              parentPath: normalizedFolderPath,
+            ),
+          );
+          continue;
+        }
+        if (entity is File) {
+          loaded.add(_fileItemFromDisk(entity.path, loaded.length));
+        }
+      }
+    } catch (_) {
+      return;
+    }
+
+    if (loaded.isEmpty || !mounted) {
+      return;
+    }
+
+    setState(() {
+      final existingPaths = _items
+          .map((item) => item.path == null ? null : _normalizePath(item.path!))
+          .whereType<String>()
+          .toSet();
+      final merged = <FileItem>[..._items];
+      for (final item in loaded) {
+        final path = item.path;
+        if (path == null) {
+          continue;
+        }
+        final normalizedPath = _normalizePath(path);
+        if (existingPaths.contains(normalizedPath)) {
+          continue;
+        }
+        existingPaths.add(normalizedPath);
+        merged.add(item);
+      }
+      _items = merged;
+    });
+  }
+
   bool _hasBrowsableEntries(LocalFolderImportResult result) {
     final separator = Platform.pathSeparator;
     final root = _normalizePath(result.rootPath);
@@ -403,6 +492,44 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       path = path.substring(0, path.length - 1);
     }
     return path;
+  }
+
+  FileItem _fileItemFromDisk(String rawPath, int index) {
+    final normalizedPath = _normalizePath(rawPath);
+    final file = File(normalizedPath);
+    final name = normalizedPath.split(Platform.pathSeparator).last;
+    return FileItem(
+      id: 'local_${DateTime.now().microsecondsSinceEpoch}_$index',
+      name: name,
+      type: _resolveType(name),
+      source: FileSource.phone,
+      path: normalizedPath,
+      parentPath: _normalizePath(file.parent.path),
+      modifiedAt: file.existsSync() ? file.lastModifiedSync() : null,
+    );
+  }
+
+  FileItemType _resolveType(String name) {
+    final extension = name.split('.').last.toLowerCase();
+    if (extension == 'pdf') {
+      return FileItemType.pdf;
+    }
+    if (['jpg', 'jpeg', 'png', 'webp', 'heic'].contains(extension)) {
+      return FileItemType.image;
+    }
+    if (['txt', 'md', 'csv', 'json', 'log'].contains(extension)) {
+      return FileItemType.text;
+    }
+    return FileItemType.document;
+  }
+
+  String _folderDisplayName(String path) {
+    final separator = Platform.pathSeparator;
+    final segments = path.split(separator).where((segment) => segment.isNotEmpty).toList();
+    if (segments.isEmpty) {
+      return path;
+    }
+    return segments.last;
   }
 
   String _deriveCommonRootPath(List<FileItem> items) {
@@ -571,7 +698,13 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           ),
         Expanded(
           child: entries.isEmpty
-              ? const Center(child: Text('Pick a folder to amend the content.'))
+              ? Center(
+                  child: Text(
+                    _currentSource == FileSource.phone && _phoneCurrentPath != null
+                        ? 'This folder has no readable files.'
+                        : 'Pick a folder to amend the content.',
+                  ),
+                )
               : Scrollbar(
                   thumbVisibility: true,
                   child: ListView.builder(

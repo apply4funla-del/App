@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:collection';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:file_tidy_app/core/interfaces/local_file_picker_service.dart';
@@ -6,7 +7,7 @@ import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/models/local_folder_import_result.dart';
 
 class LocalFilePickerAdapter implements LocalFilePickerService {
-  static const int _maxFolderImportCount = 250;
+  static const int _maxFolderImportCount = 5000;
 
   @override
   Future<List<FileItem>> pickFiles() async {
@@ -60,10 +61,10 @@ class LocalFilePickerAdapter implements LocalFilePickerService {
     final items = <FileItem>[];
     final seenFolderPaths = <String>{};
     var importedFileCount = 0;
-    final pendingDirectories = <Directory>[directory];
+    final pendingDirectories = ListQueue<Directory>()..add(directory);
 
     while (pendingDirectories.isNotEmpty && importedFileCount < _maxFolderImportCount) {
-      final current = pendingDirectories.removeLast();
+      final current = pendingDirectories.removeFirst();
       if (seenFolderPaths.add(current.path)) {
         final normalizedCurrentPath = _normalizePath(current.path);
         items.add(
@@ -102,7 +103,7 @@ class LocalFilePickerAdapter implements LocalFilePickerService {
                 ),
               );
             }
-            pendingDirectories.add(entity);
+            pendingDirectories.addLast(entity);
           }
         }
       } catch (_) {
