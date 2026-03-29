@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
@@ -74,9 +75,11 @@ class PreviewPane extends StatelessWidget {
     }
 
     if (item!.type == FileItemType.image) {
-      return InteractiveViewer(
-        child: Image.file(file, fit: BoxFit.contain),
-      );
+      return _imagePreview(file);
+    }
+
+    if (_looksLikeImagePath(item!.path!)) {
+      return _imagePreview(file);
     }
 
     if (item!.type == FileItemType.text || item!.type == FileItemType.document) {
@@ -103,5 +106,47 @@ class PreviewPane extends StatelessWidget {
     return const Center(
       child: Text('Preview available after provider connector integration.'),
     );
+  }
+
+  Widget _imagePreview(File file) {
+    return FutureBuilder<Uint8List>(
+      future: file.readAsBytes(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(
+            child: Text('Unable to load this image preview.'),
+          );
+        }
+        return InteractiveViewer(
+          child: Image.memory(
+            snapshot.data!,
+            fit: BoxFit.contain,
+            errorBuilder: (_, error, stackTrace) => const Center(
+              child: Text('This image format is not supported for preview.'),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  bool _looksLikeImagePath(String path) {
+    final extension = path.split('.').last.toLowerCase();
+    return {
+      'jpg',
+      'jpeg',
+      'png',
+      'webp',
+      'heic',
+      'heif',
+      'gif',
+      'bmp',
+      'tif',
+      'tiff',
+      'dng',
+    }.contains(extension);
   }
 }
