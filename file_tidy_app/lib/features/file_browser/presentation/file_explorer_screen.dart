@@ -413,8 +413,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
     final loaded = <FileItem>[];
     try {
-      final entities = directory.listSync(followLinks: false);
-      for (final entity in entities) {
+      final stream = directory.list(followLinks: false).handleError((_) {});
+      await for (final entity in stream) {
         if (entity is Directory) {
           final normalizedPath = _normalizePath(entity.path);
           loaded.add(

@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:collection';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:file_tidy_app/core/interfaces/local_file_picker_service.dart';
@@ -59,56 +58,47 @@ class LocalFilePickerAdapter implements LocalFilePickerService {
     }
 
     final items = <FileItem>[];
-    final seenFolderPaths = <String>{};
+    final seenFolderPaths = <String>{normalizedRootPath};
     var importedFileCount = 0;
-    final pendingDirectories = ListQueue<Directory>()..add(directory);
 
-    while (pendingDirectories.isNotEmpty && importedFileCount < _maxFolderImportCount) {
-      final current = pendingDirectories.removeFirst();
-      if (seenFolderPaths.add(current.path)) {
-        final normalizedCurrentPath = _normalizePath(current.path);
-        items.add(
-          FileItem(
-            id: 'folder_$normalizedCurrentPath',
-            name: _folderDisplayName(normalizedCurrentPath),
-            type: FileItemType.folder,
-            source: FileSource.phone,
-            path: normalizedCurrentPath,
-            parentPath: _normalizePath(current.parent.path),
-          ),
-        );
-      }
-      try {
-        final entities = current.listSync(followLinks: false);
-        for (final entity in entities) {
-          if (importedFileCount >= _maxFolderImportCount) {
-            break;
+    items.add(
+      FileItem(
+        id: 'folder_$normalizedRootPath',
+        name: _folderDisplayName(normalizedRootPath),
+        type: FileItemType.folder,
+        source: FileSource.phone,
+        path: normalizedRootPath,
+        parentPath: _normalizePath(directory.parent.path),
+      ),
+    );
+
+    try {
+      final stream = directory.list(recursive: true, followLinks: false).handleError((_) {});
+      await for (final entity in stream) {
+        if (entity is Directory) {
+          final normalizedDirectoryPath = _normalizePath(entity.path);
+          if (seenFolderPaths.add(normalizedDirectoryPath)) {
+            items.add(
+              FileItem(
+                id: 'folder_$normalizedDirectoryPath',
+                name: _folderDisplayName(normalizedDirectoryPath),
+                type: FileItemType.folder,
+                source: FileSource.phone,
+                path: normalizedDirectoryPath,
+                parentPath: _normalizePath(entity.parent.path),
+              ),
+            );
           }
-          if (entity is File) {
-            items.add(_itemFromPath(entity.path, items.length));
-            importedFileCount += 1;
-            continue;
-          }
-          if (entity is Directory) {
-            if (seenFolderPaths.add(entity.path)) {
-              final normalizedDirectoryPath = _normalizePath(entity.path);
-              items.add(
-                FileItem(
-                  id: 'folder_$normalizedDirectoryPath',
-                  name: _folderDisplayName(normalizedDirectoryPath),
-                  type: FileItemType.folder,
-                  source: FileSource.phone,
-                  path: normalizedDirectoryPath,
-                  parentPath: _normalizePath(entity.parent.path),
-                ),
-              );
-            }
-            pendingDirectories.addLast(entity);
-          }
+          continue;
         }
-      } catch (_) {
-        // Skip restricted directory and continue scanning others.
+
+        if (entity is File && importedFileCount < _maxFolderImportCount) {
+          items.add(_itemFromPath(entity.path, items.length));
+          importedFileCount += 1;
+        }
       }
+    } catch (_) {
+      // Keep whatever was discovered and continue with partial tree.
     }
 
     return LocalFolderImportResult(
