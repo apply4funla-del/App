@@ -35,6 +35,25 @@ We are building a mobile-first file organization app that turns file cleanup fro
 - Travel photo tidy: group by date/place and create clean names.
 - Fast archive: copy selected files to USB stick with clear confirmation.
 
+## Locked UX flow (2026-03-29)
+- Required sequence:
+  - Get Started
+  - Sign In
+  - Connect Source (user must tap/select one source: Phone, Google Drive, or Dropbox)
+  - Method (Amend In Root Folder or Clone And Work)
+  - Permission screen (required when Amend In Root Folder is chosen)
+  - Explorer
+- Permission handoff requirement:
+  - After user grants folder permission, app must open Explorer immediately.
+  - Do not block user behind generic "can't use this folder" style app messages.
+  - If default root folders are inaccessible, show clear instruction: "Pick a folder to amend the content."
+- Explorer layout requirement (non-negotiable):
+  - Explorer must open in 2-panel view.
+  - Left panel is folder + file tree structure only (high-level structure and file names).
+  - Right panel shows selected file details/content.
+  - Both panels must be independently scrollable.
+  - User taps a file name in left panel to open it on right panel.
+
 ## Cloud and file access requirements
 - Support local phone files.
 - Support Google Drive connection.

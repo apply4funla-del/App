@@ -14,7 +14,6 @@ import 'package:file_tidy_app/core/use_cases/import_local_files_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/replace_originals_with_duplicates_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/rename_file_use_case.dart';
 import 'package:file_tidy_app/design_system/components/app_button.dart';
-import 'package:file_tidy_app/design_system/components/app_text_input.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
 import 'package:file_tidy_app/features/preview/presentation/file_preview_screen.dart';
 import 'package:file_tidy_app/features/preview/presentation/preview_pane.dart';
@@ -42,7 +41,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   late final GetAiRenameSuggestionsUseCase _getAiRenameSuggestionsUseCase;
   late final ImportLocalFilesUseCase _importLocalFilesUseCase;
   late final ImportLocalFolderUseCase _importLocalFolderUseCase;
-  late final TextEditingController _renameController;
 
   FileSource _currentSource = FileSource.phone;
   FileItem? _focusedItem;
@@ -56,9 +54,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   RenameOperationMode _operationMode = RenameOperationMode.workInPlace;
   bool _requestedFolderOnStart = false;
 
-  bool get _isPhoneEmptyState =>
-      _currentSource == FileSource.phone && _items.isEmpty;
-
   List<FileItem> get _currentPhoneEntries {
     if (!_phoneFolderBrowsingEnabled || _phoneCurrentPath == null) {
       final values = [..._items];
@@ -71,7 +66,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   @override
   void initState() {
     super.initState();
-    _renameController = TextEditingController();
     _renameFileUseCase = RenameFileUseCase(_dependencies.fileRepository);
     _duplicateFileUseCase = DuplicateFileUseCase(_dependencies.fileRepository);
     _replaceOriginalsWithDuplicatesUseCase = ReplaceOriginalsWithDuplicatesUseCase(
@@ -106,7 +100,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   @override
   void dispose() {
-    _renameController.dispose();
     super.dispose();
   }
 
@@ -130,7 +123,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         _focusedItem = values.where((item) => item.type != FileItemType.folder).firstOrNull;
         _previewItem = _focusedItem;
       }
-      _renameController.text = _focusedItem?.name ?? '';
       _loading = false;
     });
   }
@@ -256,18 +248,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     await _applyRenameChange(item: item, newName: value);
   }
 
-  Future<void> _renameInstantlyFromLeft() async {
-    final item = _focusedItem;
-    if (item == null || item.type == FileItemType.folder) {
-      return;
-    }
-    final value = _renameController.text.trim();
-    if (value.isEmpty || value == item.name) {
-      return;
-    }
-    await _applyRenameChange(item: item, newName: value);
-  }
-
   Future<void> _applyRenameChange({
     required FileItem item,
     required String newName,
@@ -348,7 +328,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       if (visible.isNotEmpty) {
         _focusedItem = visible.first;
       }
-      _renameController.text = _focusedItem?.name ?? '';
     });
   }
 
@@ -371,7 +350,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       if (visible.isNotEmpty) {
         _focusedItem = visible.first;
       }
-      _renameController.text = _focusedItem?.name ?? '';
     });
   }
 
@@ -383,7 +361,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     setState(() {
       _previewItem = item;
       _focusedItem = item;
-      _renameController.text = item.name;
     });
   }
 
@@ -513,9 +490,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _isPhoneEmptyState
-              ? _buildPhoneEmptyState()
-              : _buildLandscape(),
+          : _buildLandscape(),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.sm),
@@ -651,6 +626,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildPhoneEmptyState() {
     return Center(
       child: Padding(
@@ -691,9 +667,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           flex: 4,
           child: Column(
             children: [
-              if (_currentSource == FileSource.phone)
-                _buildPhoneModeHint(),
-              _buildOperationModePicker(),
               if (_currentSource == FileSource.phone && _phoneCurrentPath != null)
                 ListTile(
                   leading: const Icon(Icons.folder_open_outlined),
@@ -734,40 +707,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                   ),
                 ),
               ),
-              if (_focusedItem != null && _focusedItem!.type != FileItemType.folder)
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  child: Column(
-                    children: [
-                      AppTextInput(
-                        controller: _renameController,
-                        label: 'Rename selected file',
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      SizedBox(
-                        width: double.infinity,
-                        child: AppButton.primary(
-                          label: _operationMode == RenameOperationMode.workInPlace
-                              ? 'Rename'
-                              : 'Create Duplicate',
-                          onPressed: _renameInstantlyFromLeft,
-                        ),
-                      ),
-                      if (_operationMode == RenameOperationMode.duplicate &&
-                          _currentSource == FileSource.phone &&
-                          _phoneCurrentPath != null) ...[
-                        const SizedBox(height: AppSpacing.xs),
-                        SizedBox(
-                          width: double.infinity,
-                          child: AppButton.secondary(
-                            label: 'Replace Originals In Folder',
-                            onPressed: _replaceCurrentFolderOriginals,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
             ],
           ),
         ),
@@ -807,28 +746,57 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                                   : () => _openRenameSheet(_previewItem!),
                             ),
                           ),
+                          if (_operationMode == RenameOperationMode.duplicate &&
+                              _currentSource == FileSource.phone &&
+                              _phoneCurrentPath != null) ...[
+                            const SizedBox(height: AppSpacing.sm),
+                            SizedBox(
+                              width: double.infinity,
+                              child: AppButton.secondary(
+                                label: 'Replace Originals In Folder',
+                                onPressed: _replaceCurrentFolderOriginals,
+                              ),
+                            ),
+                          ],
                         ],
                       );
                     }
-                    return Row(
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: AppButton.secondary(
-                            label: 'Tidy Up',
-                            onPressed: () => Navigator.of(context).pushNamed(AppRoutes.tidyUpSetup),
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: AppButton.secondary(
+                                label: 'Tidy Up',
+                                onPressed: () => Navigator.of(context).pushNamed(AppRoutes.tidyUpSetup),
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: AppButton.primary(
+                                label: _operationMode == RenameOperationMode.workInPlace
+                                    ? 'Rename (sheet)'
+                                    : 'Duplicate (sheet)',
+                                onPressed: _previewItem == null || _previewItem!.type == FileItemType.folder
+                                    ? null
+                                    : () => _openRenameSheet(_previewItem!),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: AppButton.primary(
-                            label: _operationMode == RenameOperationMode.workInPlace
-                                ? 'Rename (sheet)'
-                                : 'Duplicate (sheet)',
-                            onPressed: _previewItem == null || _previewItem!.type == FileItemType.folder
-                                ? null
-                                : () => _openRenameSheet(_previewItem!),
+                        if (_operationMode == RenameOperationMode.duplicate &&
+                            _currentSource == FileSource.phone &&
+                            _phoneCurrentPath != null) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          SizedBox(
+                            width: double.infinity,
+                            child: AppButton.secondary(
+                              label: 'Replace Originals In Folder',
+                              onPressed: _replaceCurrentFolderOriginals,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     );
                   },
