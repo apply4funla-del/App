@@ -10,12 +10,10 @@ import 'package:file_tidy_app/core/models/rename_operation_mode.dart';
 import 'package:file_tidy_app/core/use_cases/duplicate_file_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/get_ai_rename_suggestions_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/import_local_folder_use_case.dart';
-import 'package:file_tidy_app/core/use_cases/import_local_files_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/replace_originals_with_duplicates_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/rename_file_use_case.dart';
 import 'package:file_tidy_app/design_system/components/app_button.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
-import 'package:file_tidy_app/features/preview/presentation/file_preview_screen.dart';
 import 'package:file_tidy_app/features/preview/presentation/preview_pane.dart';
 import 'package:file_tidy_app/features/rename_manual/presentation/rename_sheet.dart';
 import 'package:flutter/material.dart';
@@ -39,20 +37,20 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   late final DuplicateFileUseCase _duplicateFileUseCase;
   late final ReplaceOriginalsWithDuplicatesUseCase _replaceOriginalsWithDuplicatesUseCase;
   late final GetAiRenameSuggestionsUseCase _getAiRenameSuggestionsUseCase;
-  late final ImportLocalFilesUseCase _importLocalFilesUseCase;
   late final ImportLocalFolderUseCase _importLocalFolderUseCase;
 
   FileSource _currentSource = FileSource.phone;
+  RenameOperationMode _operationMode = RenameOperationMode.workInPlace;
+
   FileItem? _focusedItem;
   FileItem? _previewItem;
-  bool _loading = false;
   List<FileItem> _items = [];
+  bool _loading = false;
+  bool _requestedFolderOnStart = false;
 
   String? _phoneRootPath;
   String? _phoneCurrentPath;
   bool _phoneFolderBrowsingEnabled = false;
-  RenameOperationMode _operationMode = RenameOperationMode.workInPlace;
-  bool _requestedFolderOnStart = false;
 
   List<FileItem> get _currentPhoneEntries {
     if (!_phoneFolderBrowsingEnabled || _phoneCurrentPath == null) {
@@ -74,14 +72,11 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     _getAiRenameSuggestionsUseCase = GetAiRenameSuggestionsUseCase(
       _dependencies.aiRenameService,
     );
-    _importLocalFilesUseCase = ImportLocalFilesUseCase(
-      _dependencies.localFilePickerService,
-      _dependencies.fileRepository,
-    );
     _importLocalFolderUseCase = ImportLocalFolderUseCase(
       _dependencies.localFilePickerService,
       _dependencies.fileRepository,
     );
+
     _currentSource = widget.config.source;
     _operationMode = widget.config.operationMode;
     _phoneFolderBrowsingEnabled = _currentSource == FileSource.phone;
@@ -96,11 +91,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         await _importLocalFolder();
       });
     }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   Future<void> _loadItems() async {
@@ -141,14 +131,18 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     _phoneCurrentPath ??= _phoneRootPath;
 
     final visible = _visiblePhoneEntries();
-    if (visible.isNotEmpty) {
-      _focusedItem ??= visible.first;
-      if (_previewItem == null || _previewItem!.type == FileItemType.folder) {
-        _previewItem = visible.firstWhere(
-          (item) => item.type != FileItemType.folder,
-          orElse: () => visible.first,
-        );
-      }
+    if (visible.isEmpty) {
+      _focusedItem = null;
+      _previewItem = null;
+      return;
+    }
+
+    _focusedItem ??= visible.first;
+    if (_previewItem == null || _previewItem!.type == FileItemType.folder) {
+      _previewItem = visible.firstWhere(
+        (item) => item.type != FileItemType.folder,
+        orElse: () => visible.first,
+      );
     }
   }
 
@@ -156,14 +150,18 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     if (_currentSource != FileSource.phone) {
       return;
     }
+
     final result = await _tryImportLocalFolder();
     if (!mounted) {
       return;
     }
     if (result == null || result.files.isEmpty) {
-      await _fallbackImportFilesForRestrictedFolder();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pick a folder to amend the content.')),
+      );
       return;
     }
+
     _phoneRootPath = result.rootPath;
     _phoneCurrentPath = result.rootPath;
     _phoneFolderBrowsingEnabled = true;
@@ -172,39 +170,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Imported ${result.files.length} file(s) from folder.')),
-    );
-  }
-
-  Future<void> _fallbackImportFilesForRestrictedFolder() async {
-    final files = await _importLocalFilesUseCase();
-    if (!mounted) {
-      return;
-    }
-    if (files.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'No files imported. On this device, use Import > Import Files Only and select files directly.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    _phoneFolderBrowsingEnabled = false;
-    _phoneRootPath = null;
-    _phoneCurrentPath = null;
-    await _loadItems();
-    if (!mounted) {
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Folder listing is restricted on this device. Imported ${files.length} file(s) via file picker.',
-        ),
-      ),
+      SnackBar(content: Text('Loaded ${result.files.length} file(s) from folder.')),
     );
   }
 
@@ -216,11 +182,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         return null;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Access denied for some items. Re-open folder picker and grant access, or use Import Files Only.',
-          ),
-        ),
+        const SnackBar(content: Text('Pick a folder to amend the content.')),
       );
       return null;
     }
@@ -241,10 +203,10 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         ),
       ),
     );
+
     if (value == null || value.isEmpty || value == item.name) {
       return;
     }
-
     await _applyRenameChange(item: item, newName: value);
   }
 
@@ -286,34 +248,21 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     if (!mounted) {
       return;
     }
-    final label = replaced == 0
+    final text = replaced == 0
         ? 'No duplicate pairs found in this folder.'
         : 'Replaced $replaced original file(s) with duplicates.';
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(label)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
-  // ignore: unused_element
-  Future<void> _openPreviewPortrait(FileItem item) async {
-    if (item.type == FileItemType.folder) {
-      _navigateIntoFolder(item.path ?? '');
+  void _openItemInSplit(FileItem item) {
+    if (_currentSource == FileSource.phone && item.type == FileItemType.folder) {
+      _navigateIntoFolder(item.path ?? _phoneCurrentPath ?? '');
       return;
     }
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => FilePreviewScreen(
-          item: item,
-          renameActionLabel: _operationMode == RenameOperationMode.workInPlace
-              ? 'Rename'
-              : 'Create Duplicate',
-          onRenamePressed: () async {
-            Navigator.of(context).pop();
-            await _openRenameSheet(item);
-          },
-          onTidyUpPressed: () => Navigator.of(context).pushNamed(AppRoutes.tidyUpSetup),
-        ),
-      ),
-    );
-    await _loadItems();
+    setState(() {
+      _focusedItem = item;
+      _previewItem = item;
+    });
   }
 
   void _navigateIntoFolder(String folderPath) {
@@ -350,17 +299,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       if (visible.isNotEmpty) {
         _focusedItem = visible.first;
       }
-    });
-  }
-
-  void _openItemInLandscape(FileItem item) {
-    if (_currentSource == FileSource.phone && item.type == FileItemType.folder) {
-      _navigateIntoFolder(item.path ?? _phoneCurrentPath ?? '');
-      return;
-    }
-    setState(() {
-      _previewItem = item;
-      _focusedItem = item;
     });
   }
 
@@ -468,7 +406,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                   _currentSource = value;
                   _focusedItem = null;
                   _previewItem = null;
-                  if (value != FileSource.phone) {
+                  if (value == FileSource.phone) {
+                    _phoneFolderBrowsingEnabled = true;
+                  } else {
                     _phoneCurrentPath = null;
                     _phoneRootPath = null;
                     _phoneFolderBrowsingEnabled = false;
@@ -490,7 +430,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _buildLandscape(),
+          : _buildSplitExplorer(),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.sm),
@@ -558,32 +498,19 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     );
   }
 
-  // ignore: unused_element
-  Widget _buildPortrait() {
+  Widget _buildSplitExplorer() {
     final entries = _currentSource == FileSource.phone ? _currentPhoneEntries : _items;
-    return Column(
+
+    final leftPanel = Column(
       children: [
-        if (_currentSource == FileSource.phone)
-          _buildPhoneModeHint(),
-        _buildOperationModePicker(),
-        if (_operationMode == RenameOperationMode.duplicate &&
-            _currentSource == FileSource.phone &&
-            _phoneCurrentPath != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
-            child: SizedBox(
-              width: double.infinity,
-              child: AppButton.secondary(
-                label: 'Replace Originals In Folder',
-                onPressed: _replaceCurrentFolderOriginals,
-              ),
-            ),
-          ),
         if (_currentSource == FileSource.phone && _phoneCurrentPath != null)
           ListTile(
             leading: const Icon(Icons.folder_open_outlined),
-            title: Text(_phoneCurrentPath!),
-            subtitle: Text(_phoneRootPath == _phoneCurrentPath ? 'Root folder' : 'Subfolder'),
+            title: Text(
+              _phoneCurrentPath!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             trailing: _phoneRootPath == _phoneCurrentPath
                 ? null
                 : IconButton(
@@ -592,220 +519,157 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                   ),
           ),
         Expanded(
-          child: ListTileTheme(
-            data: const ListTileThemeData(
-              subtitleTextStyle: TextStyle(fontSize: 0, height: 0),
-            ),
-            child: ListView.builder(
-            itemCount: entries.length,
-            itemBuilder: (context, index) {
-              final item = entries[index];
-              return ListTile(
-                leading: _iconFor(item.type),
-                title: Text(item.name),
-                subtitle: Text(
-                  item.type == FileItemType.folder
-                      ? item.type.name
-                      : item.duplicateOfFileId != null
-                          ? 'Duplicate copy • ${item.parentPath}'
-                          : item.parentPath,
-                ),
-                onTap: () {
-                  if (item.type == FileItemType.folder) {
-                    _navigateIntoFolder(item.path ?? '');
-                    return;
-                  }
-                  _openPreviewPortrait(item);
-                },
-              );
-            },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ignore: unused_element
-  Widget _buildPhoneEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.file_open_outlined, size: 42),
-              const SizedBox(height: AppSpacing.md),
-              const Text(
-                'No folder loaded yet.',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              const Text(
-                'Grant permission and choose a folder to start browsing.',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AppButton.primary(
-                label: 'Open phone folder',
-                onPressed: _importLocalFolder,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLandscape() {
-    final entries = _currentSource == FileSource.phone ? _currentPhoneEntries : _items;
-
-    return Row(
-      children: [
-        Expanded(
-          flex: 4,
-          child: Column(
-            children: [
-              if (_currentSource == FileSource.phone && _phoneCurrentPath != null)
-                ListTile(
-                  leading: const Icon(Icons.folder_open_outlined),
-                  title: Text(_phoneCurrentPath!),
-                  trailing: _phoneRootPath == _phoneCurrentPath
-                      ? null
-                      : IconButton(
-                          icon: const Icon(Icons.arrow_upward),
-                          onPressed: _goUpOneFolder,
-                        ),
-                ),
-              Expanded(
-                child: ListTileTheme(
-                  data: const ListTileThemeData(
-                    subtitleTextStyle: TextStyle(fontSize: 0, height: 0),
-                  ),
+          child: entries.isEmpty
+              ? const Center(child: Text('Pick a folder to amend the content.'))
+              : Scrollbar(
+                  thumbVisibility: true,
                   child: ListView.builder(
-                  itemCount: entries.length,
-                  itemBuilder: (context, index) {
-                    final item = entries[index];
-                    final selected = _focusedItem?.id == item.id;
-                    return InkWell(
-                      onTap: () => _openItemInLandscape(item),
-                      child: ListTile(
+                    itemCount: entries.length,
+                    itemBuilder: (context, index) {
+                      final item = entries[index];
+                      final selected = _focusedItem?.id == item.id;
+                      return ListTile(
                         selected: selected,
                         leading: _iconFor(item.type),
-                        title: Text(item.name),
-                        subtitle: Text(
-                          item.type == FileItemType.folder
-                              ? item.type.name
-                              : item.duplicateOfFileId != null
-                                  ? 'Duplicate copy • ${item.parentPath}'
-                                  : item.parentPath,
+                        title: Text(
+                          item.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    );
-                  },
+                        onTap: () => _openItemInSplit(item),
+                      );
+                    },
                   ),
                 ),
-              ),
-            ],
-          ),
         ),
-        const VerticalDivider(width: 1),
+      ],
+    );
+
+    final rightPanel = Column(
+      children: [
         Expanded(
-          flex: 6,
-          child: Column(
-            children: [
-              Expanded(
-                child: PreviewPane(item: _previewItem),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final compact = constraints.maxWidth < 420;
-                    if (compact) {
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            width: double.infinity,
-                            child: AppButton.secondary(
-                              label: 'Tidy Up',
-                              onPressed: () => Navigator.of(context).pushNamed(AppRoutes.tidyUpSetup),
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          SizedBox(
-                            width: double.infinity,
-                            child: AppButton.primary(
-                              label: _operationMode == RenameOperationMode.workInPlace
-                                  ? 'Rename (sheet)'
-                                  : 'Duplicate (sheet)',
-                              onPressed: _previewItem == null || _previewItem!.type == FileItemType.folder
-                                  ? null
-                                  : () => _openRenameSheet(_previewItem!),
-                            ),
-                          ),
-                          if (_operationMode == RenameOperationMode.duplicate &&
-                              _currentSource == FileSource.phone &&
-                              _phoneCurrentPath != null) ...[
-                            const SizedBox(height: AppSpacing.sm),
-                            SizedBox(
-                              width: double.infinity,
-                              child: AppButton.secondary(
-                                label: 'Replace Originals In Folder',
-                                onPressed: _replaceCurrentFolderOriginals,
-                              ),
-                            ),
-                          ],
-                        ],
-                      );
-                    }
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: AppButton.secondary(
-                                label: 'Tidy Up',
-                                onPressed: () => Navigator.of(context).pushNamed(AppRoutes.tidyUpSetup),
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: AppButton.primary(
-                                label: _operationMode == RenameOperationMode.workInPlace
-                                    ? 'Rename (sheet)'
-                                    : 'Duplicate (sheet)',
-                                onPressed: _previewItem == null || _previewItem!.type == FileItemType.folder
-                                    ? null
-                                    : () => _openRenameSheet(_previewItem!),
-                              ),
-                            ),
-                          ],
+          child: PreviewPane(item: _previewItem),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 420;
+              final renameLabel = _operationMode == RenameOperationMode.workInPlace
+                  ? 'Rename (sheet)'
+                  : 'Duplicate (sheet)';
+
+              if (compact) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: AppButton.secondary(
+                        label: 'Tidy Up',
+                        onPressed: () => Navigator.of(context).pushNamed(AppRoutes.tidyUpSetup),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    SizedBox(
+                      width: double.infinity,
+                      child: AppButton.primary(
+                        label: renameLabel,
+                        onPressed: _previewItem == null || _previewItem!.type == FileItemType.folder
+                            ? null
+                            : () => _openRenameSheet(_previewItem!),
+                      ),
+                    ),
+                    if (_operationMode == RenameOperationMode.duplicate &&
+                        _currentSource == FileSource.phone &&
+                        _phoneCurrentPath != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      SizedBox(
+                        width: double.infinity,
+                        child: AppButton.secondary(
+                          label: 'Replace Originals In Folder',
+                          onPressed: _replaceCurrentFolderOriginals,
                         ),
-                        if (_operationMode == RenameOperationMode.duplicate &&
-                            _currentSource == FileSource.phone &&
-                            _phoneCurrentPath != null) ...[
-                          const SizedBox(height: AppSpacing.sm),
-                          SizedBox(
-                            width: double.infinity,
-                            child: AppButton.secondary(
-                              label: 'Replace Originals In Folder',
-                              onPressed: _replaceCurrentFolderOriginals,
-                            ),
-                          ),
-                        ],
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
+                      ),
+                    ],
+                  ],
+                );
+              }
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppButton.secondary(
+                          label: 'Tidy Up',
+                          onPressed: () => Navigator.of(context).pushNamed(AppRoutes.tidyUpSetup),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: AppButton.primary(
+                          label: renameLabel,
+                          onPressed: _previewItem == null || _previewItem!.type == FileItemType.folder
+                              ? null
+                              : () => _openRenameSheet(_previewItem!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_operationMode == RenameOperationMode.duplicate &&
+                      _currentSource == FileSource.phone &&
+                      _phoneCurrentPath != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    SizedBox(
+                      width: double.infinity,
+                      child: AppButton.secondary(
+                        label: 'Replace Originals In Folder',
+                        onPressed: _replaceCurrentFolderOriginals,
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
         ),
       ],
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const minLeftWidth = 300.0;
+        const minRightWidth = 360.0;
+        const dividerWidth = 1.0;
+        const totalMinWidth = minLeftWidth + dividerWidth + minRightWidth;
+
+        if (constraints.maxWidth < totalMinWidth) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: totalMinWidth,
+              height: constraints.maxHeight,
+              child: Row(
+                children: [
+                  SizedBox(width: minLeftWidth, child: leftPanel),
+                  const VerticalDivider(width: dividerWidth),
+                  SizedBox(width: minRightWidth, child: rightPanel),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(flex: 4, child: leftPanel),
+            const VerticalDivider(width: dividerWidth),
+            Expanded(flex: 6, child: rightPanel),
+          ],
+        );
+      },
     );
   }
 
@@ -823,58 +687,4 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         return const Icon(Icons.description_outlined);
     }
   }
-
-  Widget _buildOperationModePicker() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Mode'),
-          const SizedBox(height: AppSpacing.xs),
-          SegmentedButton<RenameOperationMode>(
-            segments: RenameOperationMode.values
-                .map(
-                  (mode) => ButtonSegment<RenameOperationMode>(
-                    value: mode,
-                    label: Text(mode.label),
-                  ),
-                )
-                .toList(),
-            selected: {_operationMode},
-            onSelectionChanged: (values) {
-              if (values.isEmpty) {
-                return;
-              }
-              setState(() => _operationMode = values.first);
-            },
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            _operationMode == RenameOperationMode.workInPlace
-                ? 'Edits original files directly.'
-                : 'Creates renamed copies and keeps originals until you replace them.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPhoneModeHint() {
-    final text = _phoneFolderBrowsingEnabled
-        ? 'Mode: Folder browsing. Double-tap a file to open it on the right.'
-        : 'Mode: Files only. Use Import > Open Folder to browse folders.';
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          text,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      ),
-    );
-  }
-
 }
