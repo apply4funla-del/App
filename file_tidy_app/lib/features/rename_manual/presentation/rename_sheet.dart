@@ -23,6 +23,7 @@ class RenameSheet extends StatefulWidget {
 class _RenameSheetState extends State<RenameSheet> with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   late final TextEditingController _nameController;
+  late final String _lockedExtension;
   List<String> _suggestions = [];
   bool _loading = false;
 
@@ -33,7 +34,10 @@ class _RenameSheetState extends State<RenameSheet> with SingleTickerProviderStat
       length: FeatureFlags.enableAiRename ? 2 : 1,
       vsync: this,
     );
-    _nameController = TextEditingController(text: widget.currentName);
+    _lockedExtension = _extractExtension(widget.currentName);
+    _nameController = TextEditingController(
+      text: _stripExtension(widget.currentName),
+    );
   }
 
   @override
@@ -77,11 +81,36 @@ class _RenameSheetState extends State<RenameSheet> with SingleTickerProviderStat
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    AppTextInput(
-                      controller: _nameController,
-                      label: 'New file name',
-                      hintText: 'Type your preferred name',
-                    ),
+                    if (_lockedExtension.isEmpty)
+                      AppTextInput(
+                        controller: _nameController,
+                        label: 'New file name',
+                        hintText: 'Type your preferred name',
+                      )
+                    else
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('New file name'),
+                          const SizedBox(height: AppSpacing.xs),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: AppTextInput(
+                                  controller: _nameController,
+                                  label: 'Name',
+                                  hintText: 'Type your preferred name',
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Text(
+                                _lockedExtension,
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     if (FeatureFlags.enableAiRename)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,7 +130,7 @@ class _RenameSheetState extends State<RenameSheet> with SingleTickerProviderStat
                                   trailing: AppButton.secondary(
                                     label: 'Use',
                                     onPressed: () {
-                                      _nameController.text = suggestion;
+                                      _nameController.text = _stripExtension(suggestion);
                                       _tabController.animateTo(0);
                                     },
                                   ),
@@ -127,7 +156,7 @@ class _RenameSheetState extends State<RenameSheet> with SingleTickerProviderStat
                   Expanded(
                     child: AppButton.primary(
                       label: widget.confirmLabel,
-                      onPressed: () => Navigator.of(context).pop(_nameController.text.trim()),
+                      onPressed: () => Navigator.of(context).pop(_buildFinalName()),
                     ),
                   ),
                 ],
@@ -137,5 +166,47 @@ class _RenameSheetState extends State<RenameSheet> with SingleTickerProviderStat
         ),
       ),
     );
+  }
+
+  String _extractExtension(String value) {
+    final dotIndex = value.lastIndexOf('.');
+    if (dotIndex <= 0 || dotIndex == value.length - 1) {
+      return '';
+    }
+    return value.substring(dotIndex);
+  }
+
+  String _stripExtension(String value) {
+    if (_lockedExtension.isEmpty) {
+      return value;
+    }
+    if (value.toLowerCase().endsWith(_lockedExtension.toLowerCase())) {
+      return value.substring(0, value.length - _lockedExtension.length);
+    }
+    final dotIndex = value.lastIndexOf('.');
+    if (dotIndex > 0) {
+      return value.substring(0, dotIndex);
+    }
+    return value;
+  }
+
+  String _buildFinalName() {
+    var base = _nameController.text.trim();
+    if (base.isEmpty) {
+      return widget.currentName;
+    }
+    if (_lockedExtension.isEmpty) {
+      return base;
+    }
+    if (base.toLowerCase().endsWith(_lockedExtension.toLowerCase())) {
+      base = base.substring(0, base.length - _lockedExtension.length);
+    }
+    if (base.endsWith('.')) {
+      base = base.substring(0, base.length - 1);
+    }
+    if (base.isEmpty) {
+      return widget.currentName;
+    }
+    return '$base$_lockedExtension';
   }
 }
