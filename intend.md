@@ -128,6 +128,7 @@ We are building a mobile-first file organization app that turns file cleanup fro
 | Folder pick control | User chooses folders to allow | 5 |
 | Local file access | Browse files on phone | 4 |
 | Main folder browser | Navigate files simply | 5 |
+| Sort controls | Sort files by name/date/size | 5 |
 | Landscape split view | Left browse, right preview | 5 |
 | Portrait single view | Clean phone-first layout | 5 |
 | File preview | Understand file before rename | 4 |

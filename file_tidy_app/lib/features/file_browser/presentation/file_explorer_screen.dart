@@ -16,6 +16,8 @@ import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
 import 'package:file_tidy_app/features/preview/presentation/preview_pane.dart';
 import 'package:flutter/material.dart';
 
+enum _ExplorerSortType { name, modifiedDate, fileSize }
+
 class FileExplorerScreen extends StatefulWidget {
   const FileExplorerScreen({
     super.key,
@@ -54,12 +56,11 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   String? _renameTargetFileId;
   String _renameLockedExtension = '';
   bool _renameApplying = false;
+  _ExplorerSortType _sortType = _ExplorerSortType.name;
 
   List<FileItem> get _currentPhoneEntries {
     if (!_phoneFolderBrowsingEnabled || _phoneCurrentPath == null) {
-      final values = [..._items];
-      values.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-      return values;
+      return _sortEntries(_items);
     }
     return _visiblePhoneEntries();
   }
@@ -438,11 +439,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       );
     }
 
-    final folderItems = folderMap.values.toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-
-    files.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    return [...folderItems, ...files];
+    return _sortEntries([...folderMap.values, ...files]);
   }
 
   Future<void> _hydratePhoneFolderBranchIfNeeded(String folderPath) async {
@@ -559,6 +556,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     final normalizedPath = _normalizePath(rawPath);
     final file = File(normalizedPath);
     final name = normalizedPath.split(Platform.pathSeparator).last;
+    final exists = file.existsSync();
     return FileItem(
       id: 'local_${DateTime.now().microsecondsSinceEpoch}_$index',
       name: name,
@@ -566,7 +564,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       source: FileSource.phone,
       path: normalizedPath,
       parentPath: _normalizePath(file.parent.path),
-      modifiedAt: file.existsSync() ? file.lastModifiedSync() : null,
+      modifiedAt: exists ? file.lastModifiedSync() : null,
+      sizeBytes: exists ? file.lengthSync() : null,
     );
   }
 
@@ -591,6 +590,53 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       return path;
     }
     return segments.last;
+  }
+
+  List<FileItem> _sortEntries(List<FileItem> items) {
+    final folders = items.where((item) => item.type == FileItemType.folder).toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final files = items.where((item) => item.type != FileItemType.folder).toList();
+
+    switch (_sortType) {
+      case _ExplorerSortType.name:
+        files.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        break;
+      case _ExplorerSortType.modifiedDate:
+        files.sort((a, b) {
+          final aTs = a.modifiedAt?.millisecondsSinceEpoch ?? 0;
+          final bTs = b.modifiedAt?.millisecondsSinceEpoch ?? 0;
+          final byDate = bTs.compareTo(aTs);
+          if (byDate != 0) {
+            return byDate;
+          }
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
+        break;
+      case _ExplorerSortType.fileSize:
+        files.sort((a, b) {
+          final aSize = a.sizeBytes ?? 0;
+          final bSize = b.sizeBytes ?? 0;
+          final bySize = bSize.compareTo(aSize);
+          if (bySize != 0) {
+            return bySize;
+          }
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
+        break;
+    }
+
+    return [...folders, ...files];
+  }
+
+  String _sortTypeLabel(_ExplorerSortType type) {
+    switch (type) {
+      case _ExplorerSortType.name:
+        return 'Name';
+      case _ExplorerSortType.modifiedDate:
+        return 'Date';
+      case _ExplorerSortType.fileSize:
+        return 'Size';
+    }
   }
 
   String _deriveCommonRootPath(List<FileItem> items) {
@@ -633,6 +679,30 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               tooltip: 'Choose folder',
               onPressed: _importLocalFolder,
             ),
+          PopupMenuButton<_ExplorerSortType>(
+            tooltip: 'Sort',
+            icon: const Icon(Icons.sort),
+            onSelected: (value) {
+              if (_sortType == value) {
+                return;
+              }
+              setState(() => _sortType = value);
+            },
+            itemBuilder: (context) {
+              return _ExplorerSortType.values
+                  .map(
+                    (type) => PopupMenuItem<_ExplorerSortType>(
+                      value: type,
+                      child: Text(
+                        _sortType == type
+                            ? 'Sort: ${_sortTypeLabel(type)} (Current)'
+                            : 'Sort: ${_sortTypeLabel(type)}',
+                      ),
+                    ),
+                  )
+                  .toList();
+            },
+          ),
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.md),
             child: DropdownButton<FileSource>(
@@ -738,7 +808,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   }
 
   Widget _buildSplitExplorer() {
-    final entries = _currentSource == FileSource.phone ? _currentPhoneEntries : _items;
+    final entries = _currentSource == FileSource.phone ? _currentPhoneEntries : _sortEntries(_items);
 
     final leftPanel = Column(
       children: [

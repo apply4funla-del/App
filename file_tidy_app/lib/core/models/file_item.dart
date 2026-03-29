@@ -12,6 +12,7 @@ class FileItem {
     this.parentPath = '/',
     this.duplicateOfFileId,
     this.modifiedAt,
+    this.sizeBytes,
   });
 
   final String id;
@@ -22,6 +23,7 @@ class FileItem {
   final String parentPath;
   final String? duplicateOfFileId;
   final DateTime? modifiedAt;
+  final int? sizeBytes;
 
   FileItem copyWith({
     String? name,
@@ -30,6 +32,7 @@ class FileItem {
     String? duplicateOfFileId,
     bool clearDuplicateOfFileId = false,
     DateTime? modifiedAt,
+    int? sizeBytes,
   }) {
     return FileItem(
       id: id,
@@ -40,6 +43,7 @@ class FileItem {
       parentPath: parentPath ?? this.parentPath,
       duplicateOfFileId: clearDuplicateOfFileId ? null : (duplicateOfFileId ?? this.duplicateOfFileId),
       modifiedAt: modifiedAt ?? this.modifiedAt,
+      sizeBytes: sizeBytes ?? this.sizeBytes,
     );
   }
 }

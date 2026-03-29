@@ -131,6 +131,7 @@ class LocalFilePickerAdapter implements LocalFilePickerService {
     final normalizedPath = _normalizePath(path);
     final file = File(normalizedPath);
     final name = normalizedPath.split(Platform.pathSeparator).last;
+    final exists = file.existsSync();
     return FileItem(
       id: 'local_${DateTime.now().microsecondsSinceEpoch}_$index',
       name: name,
@@ -138,7 +139,8 @@ class LocalFilePickerAdapter implements LocalFilePickerService {
       source: FileSource.phone,
       path: normalizedPath,
       parentPath: _normalizePath(file.parent.path),
-      modifiedAt: file.existsSync() ? file.lastModifiedSync() : null,
+      modifiedAt: exists ? file.lastModifiedSync() : null,
+      sizeBytes: exists ? file.lengthSync() : null,
     );
   }
 

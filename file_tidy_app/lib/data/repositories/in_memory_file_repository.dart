@@ -160,6 +160,7 @@ class InMemoryFileRepository implements FileRepository {
         parentPath: source.parentPath,
         duplicateOfFileId: source.id,
         modifiedAt: DateTime.now(),
+        sizeBytes: source.sizeBytes,
       );
       entry.value.insert(index + 1, duplicateItem);
 
