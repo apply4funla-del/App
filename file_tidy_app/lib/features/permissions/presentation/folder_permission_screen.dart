@@ -44,10 +44,9 @@ class _FolderPermissionScreenState extends State<FolderPermissionScreen> {
     if (result == null || result.files.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No files loaded from selected folder.'),
+          content: Text('Pick a folder to amend the content.'),
         ),
       );
-      return;
     }
 
     Navigator.of(context).pushNamedAndRemoveUntil(

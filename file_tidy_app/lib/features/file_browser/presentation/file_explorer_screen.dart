@@ -312,6 +312,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(label)));
   }
 
+  // ignore: unused_element
   Future<void> _openPreviewPortrait(FileItem item) async {
     if (item.type == FileItemType.folder) {
       _navigateIntoFolder(item.path ?? '');
@@ -462,8 +463,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Explorer'),
@@ -516,9 +515,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _isPhoneEmptyState
               ? _buildPhoneEmptyState()
-              : isLandscape
-                  ? _buildLandscape()
-                  : _buildPortrait(),
+              : _buildLandscape(),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.sm),
@@ -586,6 +583,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildPortrait() {
     final entries = _currentSource == FileSource.phone ? _currentPhoneEntries : _items;
     return Column(
