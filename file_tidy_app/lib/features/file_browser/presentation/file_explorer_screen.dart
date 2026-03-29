@@ -175,9 +175,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       return;
     }
     if (result == null || result.files.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No folder files imported.')),
-      );
+      await _fallbackImportFilesForRestrictedFolder();
       return;
     }
     _phoneRootPath = result.rootPath;
@@ -189,6 +187,38 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Imported ${result.files.length} file(s) from folder.')),
+    );
+  }
+
+  Future<void> _fallbackImportFilesForRestrictedFolder() async {
+    final files = await _importLocalFilesUseCase();
+    if (!mounted) {
+      return;
+    }
+    if (files.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No files imported. On this device, use Import > Import Files Only and select files directly.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    _phoneFolderBrowsingEnabled = false;
+    _phoneRootPath = null;
+    _phoneCurrentPath = null;
+    await _loadItems();
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Folder listing is restricted on this device. Imported ${files.length} file(s) via file picker.',
+        ),
+      ),
     );
   }
 
