@@ -7,6 +7,7 @@ import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:xml/xml.dart';
 
 class PreviewPane extends StatelessWidget {
@@ -83,6 +84,10 @@ class PreviewPane extends StatelessWidget {
 
     if (_looksLikeImagePath(item!.path!)) {
       return _imagePreview(file);
+    }
+
+    if (_looksLikeVideoPath(item!.path!)) {
+      return _videoThumbnailPreview(file);
     }
 
     final extension = _fileExtension(item!.path!);
@@ -176,6 +181,52 @@ class PreviewPane extends StatelessWidget {
     );
   }
 
+  Widget _videoThumbnailPreview(File file) {
+    return FutureBuilder<Uint8List?>(
+      future: VideoThumbnail.thumbnailData(
+        video: file.path,
+        imageFormat: ImageFormat.JPEG,
+        maxWidth: 1400,
+        quality: 80,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data == null || snapshot.data!.isEmpty) {
+          return const Center(
+            child: Text(
+              'Unable to generate video thumbnail.\nVideo playback is not enabled yet.',
+              textAlign: TextAlign.center,
+            ),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: InteractiveViewer(
+                child: Image.memory(
+                  snapshot.data!,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, error, stackTrace) => const Center(
+                    child: Text('Video thumbnail format is not supported.'),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Video preview: first frame',
+              style: Theme.of(context).textTheme.labelMedium,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   bool _looksLikeImagePath(String path) {
     final extension = _fileExtension(path);
     return {
@@ -190,6 +241,19 @@ class PreviewPane extends StatelessWidget {
       'tif',
       'tiff',
       'dng',
+    }.contains(extension);
+  }
+
+  bool _looksLikeVideoPath(String path) {
+    final extension = _fileExtension(path);
+    return {
+      'mp4',
+      'mov',
+      'm4v',
+      'avi',
+      'mkv',
+      'webm',
+      '3gp',
     }.contains(extension);
   }
 

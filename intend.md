@@ -131,7 +131,7 @@ We are building a mobile-first file organization app that turns file cleanup fro
 | Landscape split view | Left browse, right preview | 5 |
 | Portrait single view | Clean phone-first layout | 5 |
 | File preview | Understand file before rename | 4 |
-Preview scope note: V1 preview includes PDF, images, text, and lightweight content peek for docx/xlsx/pptx. Legacy doc/xls/ppt and video files are limited preview.
+Preview scope note: V1 preview includes PDF, images, text, lightweight content peek for docx/xlsx/pptx, and first-frame thumbnail preview for common video files (mp4/mov). Legacy doc/xls/ppt remain limited preview.
 | Manual rename | Full user control | 5 |
 | AI rename suggestions | 3 smart rename options | 4 |
 | Rename confirmation | Prevent accidental changes | 5 |
