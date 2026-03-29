@@ -57,16 +57,25 @@ class LocalFilePickerAdapter implements LocalFilePickerService {
     }
 
     final items = <FileItem>[];
-    final entities = directory.listSync(recursive: true, followLinks: false);
-    for (final entity in entities) {
-      if (entity is! File) {
-        continue;
+    final stream = directory.list(
+      recursive: true,
+      followLinks: false,
+    );
+
+    try {
+      await for (final entity in stream.handleError((_) {})) {
+        if (entity is! File) {
+          continue;
+        }
+        if (items.length >= _maxFolderImportCount) {
+          break;
+        }
+        items.add(_itemFromPath(entity.path, items.length));
       }
-      if (items.length >= _maxFolderImportCount) {
-        break;
-      }
-      items.add(_itemFromPath(entity.path, items.length));
+    } catch (_) {
+      // Keep partial results when some child paths are permission-restricted.
     }
+
     return LocalFolderImportResult(
       rootPath: directoryPath,
       files: items,

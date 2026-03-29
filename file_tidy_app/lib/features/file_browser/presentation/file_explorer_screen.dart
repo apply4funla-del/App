@@ -202,7 +202,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'This folder cannot be read on this phone. Try a subfolder inside Downloads, or use Import Files Only.',
+            'Access denied for some items. Re-open folder picker and grant access, or use Import Files Only.',
           ),
         ),
       );
@@ -939,7 +939,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         content: const Text(
           'Open Folder: lets you browse folders on the left panel.\n\n'
           'Import Files Only: adds selected files directly into a flat list, without folder navigation.\n\n'
-          'Note: some phones do not allow selecting the root Downloads folder for app access. Select a subfolder or use Import Files Only.',
+          'If prompted, grant folder access. If some files are still restricted by Android, use Import Files Only.',
         ),
         actions: [
           SizedBox(
