@@ -50,8 +50,9 @@ class LocalFilePickerAdapter implements LocalFilePickerService {
     if (directoryPath == null) {
       return null;
     }
+    final normalizedRootPath = _normalizePath(directoryPath);
 
-    final directory = Directory(directoryPath);
+    final directory = Directory(normalizedRootPath);
     if (!directory.existsSync()) {
       return null;
     }
@@ -64,14 +65,15 @@ class LocalFilePickerAdapter implements LocalFilePickerService {
     while (pendingDirectories.isNotEmpty && importedFileCount < _maxFolderImportCount) {
       final current = pendingDirectories.removeLast();
       if (seenFolderPaths.add(current.path)) {
+        final normalizedCurrentPath = _normalizePath(current.path);
         items.add(
           FileItem(
-            id: 'folder_${current.path}',
-            name: current.path.split(Platform.pathSeparator).last,
+            id: 'folder_$normalizedCurrentPath',
+            name: _folderDisplayName(normalizedCurrentPath),
             type: FileItemType.folder,
             source: FileSource.phone,
-            path: current.path,
-            parentPath: current.parent.path,
+            path: normalizedCurrentPath,
+            parentPath: _normalizePath(current.parent.path),
           ),
         );
       }
@@ -88,14 +90,15 @@ class LocalFilePickerAdapter implements LocalFilePickerService {
           }
           if (entity is Directory) {
             if (seenFolderPaths.add(entity.path)) {
+              final normalizedDirectoryPath = _normalizePath(entity.path);
               items.add(
                 FileItem(
-                  id: 'folder_${entity.path}',
-                  name: entity.path.split(Platform.pathSeparator).last,
+                  id: 'folder_$normalizedDirectoryPath',
+                  name: _folderDisplayName(normalizedDirectoryPath),
                   type: FileItemType.folder,
                   source: FileSource.phone,
-                  path: entity.path,
-                  parentPath: entity.parent.path,
+                  path: normalizedDirectoryPath,
+                  parentPath: _normalizePath(entity.parent.path),
                 ),
               );
             }
@@ -108,7 +111,7 @@ class LocalFilePickerAdapter implements LocalFilePickerService {
     }
 
     return LocalFolderImportResult(
-      rootPath: directoryPath,
+      rootPath: normalizedRootPath,
       files: items,
     );
   }
@@ -128,16 +131,35 @@ class LocalFilePickerAdapter implements LocalFilePickerService {
   }
 
   FileItem _itemFromPath(String path, int index) {
-    final file = File(path);
-    final name = path.split(Platform.pathSeparator).last;
+    final normalizedPath = _normalizePath(path);
+    final file = File(normalizedPath);
+    final name = normalizedPath.split(Platform.pathSeparator).last;
     return FileItem(
       id: 'local_${DateTime.now().microsecondsSinceEpoch}_$index',
       name: name,
       type: _resolveType(name),
       source: FileSource.phone,
-      path: path,
-      parentPath: file.parent.path,
+      path: normalizedPath,
+      parentPath: _normalizePath(file.parent.path),
       modifiedAt: file.existsSync() ? file.lastModifiedSync() : null,
     );
+  }
+
+  String _normalizePath(String value) {
+    final separator = Platform.pathSeparator;
+    var path = value.trim();
+    while (path.length > 1 && path.endsWith(separator)) {
+      path = path.substring(0, path.length - 1);
+    }
+    return path;
+  }
+
+  String _folderDisplayName(String path) {
+    final separator = Platform.pathSeparator;
+    final segments = path.split(separator).where((segment) => segment.isNotEmpty).toList();
+    if (segments.isEmpty) {
+      return path;
+    }
+    return segments.last;
   }
 }

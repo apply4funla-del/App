@@ -313,7 +313,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     }
 
     final separator = Platform.pathSeparator;
-    final normalizedCurrent = current.endsWith(separator) ? current : '$current$separator';
+    final normalizedCurrentPath = _normalizePath(current);
+    final normalizedCurrent = '$normalizedCurrentPath$separator';
     final folderMap = <String, FileItem>{};
     final files = <FileItem>[];
 
@@ -321,21 +322,28 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       if (item.path == null) {
         continue;
       }
-      final path = item.path!;
-      if (!path.startsWith(normalizedCurrent) && item.parentPath != current) {
+      final path = _normalizePath(item.path!);
+      final parentPath = _normalizePath(item.parentPath);
+      if (path == normalizedCurrentPath) {
+        continue;
+      }
+      if (!path.startsWith(normalizedCurrent) && parentPath != normalizedCurrentPath) {
         continue;
       }
 
-      if (item.parentPath == current) {
+      if (parentPath == normalizedCurrentPath) {
         if (item.type == FileItemType.folder) {
-          folderMap[path] = item;
+          folderMap[path] = item.copyWith(path: path, parentPath: parentPath);
         } else {
-          files.add(item);
+          files.add(item.copyWith(path: path, parentPath: parentPath));
         }
         continue;
       }
 
       final remainder = path.substring(normalizedCurrent.length);
+      if (remainder.isEmpty) {
+        continue;
+      }
       if (!remainder.contains(separator)) {
         if (item.type == FileItemType.folder) {
           folderMap[path] = item.copyWith(name: remainder);
@@ -368,20 +376,33 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   bool _hasBrowsableEntries(LocalFolderImportResult result) {
     final separator = Platform.pathSeparator;
-    final normalizedRoot = result.rootPath.endsWith(separator)
-        ? result.rootPath
-        : '${result.rootPath}$separator';
+    final root = _normalizePath(result.rootPath);
+    final normalizedRoot = '$root$separator';
 
     for (final item in result.files) {
       final path = item.path;
-      if (path == null || path == result.rootPath) {
+      if (path == null) {
         continue;
       }
-      if (item.parentPath == result.rootPath || path.startsWith(normalizedRoot)) {
+      final normalizedPath = _normalizePath(path);
+      final normalizedParent = _normalizePath(item.parentPath);
+      if (normalizedPath == root) {
+        continue;
+      }
+      if (normalizedParent == root || normalizedPath.startsWith(normalizedRoot)) {
         return true;
       }
     }
     return false;
+  }
+
+  String _normalizePath(String value) {
+    final separator = Platform.pathSeparator;
+    var path = value.trim();
+    while (path.length > 1 && path.endsWith(separator)) {
+      path = path.substring(0, path.length - 1);
+    }
+    return path;
   }
 
   String _deriveCommonRootPath(List<FileItem> items) {

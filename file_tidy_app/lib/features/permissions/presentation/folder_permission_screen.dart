@@ -67,20 +67,33 @@ class _FolderPermissionScreenState extends State<FolderPermissionScreen> {
 
   bool _hasBrowsableEntries(LocalFolderImportResult result) {
     final separator = Platform.pathSeparator;
-    final normalizedRoot = result.rootPath.endsWith(separator)
-        ? result.rootPath
-        : '${result.rootPath}$separator';
+    final root = _normalizePath(result.rootPath);
+    final normalizedRoot = '$root$separator';
 
     for (final item in result.files) {
       final path = item.path;
-      if (path == null || path == result.rootPath) {
+      if (path == null) {
         continue;
       }
-      if (item.parentPath == result.rootPath || path.startsWith(normalizedRoot)) {
+      final normalizedPath = _normalizePath(path);
+      final normalizedParent = _normalizePath(item.parentPath);
+      if (normalizedPath == root) {
+        continue;
+      }
+      if (normalizedParent == root || normalizedPath.startsWith(normalizedRoot)) {
         return true;
       }
     }
     return false;
+  }
+
+  String _normalizePath(String value) {
+    final separator = Platform.pathSeparator;
+    var path = value.trim();
+    while (path.length > 1 && path.endsWith(separator)) {
+      path = path.substring(0, path.length - 1);
+    }
+    return path;
   }
 
   @override
