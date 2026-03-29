@@ -8,14 +8,12 @@ import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/models/local_folder_import_result.dart';
 import 'package:file_tidy_app/core/models/rename_operation_mode.dart';
 import 'package:file_tidy_app/core/use_cases/duplicate_file_use_case.dart';
-import 'package:file_tidy_app/core/use_cases/get_ai_rename_suggestions_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/import_local_folder_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/replace_originals_with_duplicates_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/rename_file_use_case.dart';
 import 'package:file_tidy_app/design_system/components/app_button.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
 import 'package:file_tidy_app/features/preview/presentation/preview_pane.dart';
-import 'package:file_tidy_app/features/rename_manual/presentation/rename_sheet.dart';
 import 'package:flutter/material.dart';
 
 class FileExplorerScreen extends StatefulWidget {
@@ -36,8 +34,10 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   late final RenameFileUseCase _renameFileUseCase;
   late final DuplicateFileUseCase _duplicateFileUseCase;
   late final ReplaceOriginalsWithDuplicatesUseCase _replaceOriginalsWithDuplicatesUseCase;
-  late final GetAiRenameSuggestionsUseCase _getAiRenameSuggestionsUseCase;
   late final ImportLocalFolderUseCase _importLocalFolderUseCase;
+
+  final TextEditingController _renameBaseController = TextEditingController();
+  final FocusNode _renameBaseFocusNode = FocusNode();
 
   FileSource _currentSource = FileSource.phone;
   RenameOperationMode _operationMode = RenameOperationMode.workInPlace;
@@ -51,6 +51,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   String? _phoneRootPath;
   String? _phoneCurrentPath;
   bool _phoneFolderBrowsingEnabled = false;
+  String? _renameTargetFileId;
+  String _renameLockedExtension = '';
+  bool _renameApplying = false;
 
   List<FileItem> get _currentPhoneEntries {
     if (!_phoneFolderBrowsingEnabled || _phoneCurrentPath == null) {
@@ -69,14 +72,16 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     _replaceOriginalsWithDuplicatesUseCase = ReplaceOriginalsWithDuplicatesUseCase(
       _dependencies.fileRepository,
     );
-    _getAiRenameSuggestionsUseCase = GetAiRenameSuggestionsUseCase(
-      _dependencies.aiRenameService,
-    );
     _importLocalFolderUseCase = ImportLocalFolderUseCase(
       _dependencies.localFilePickerService,
       _dependencies.fileRepository,
       _dependencies.storagePermissionService,
     );
+    _renameBaseFocusNode.addListener(() {
+      if (!_renameBaseFocusNode.hasFocus) {
+        _commitInlineRename();
+      }
+    });
 
     _currentSource = widget.config.source;
     _operationMode = widget.config.operationMode;
@@ -98,12 +103,21 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    _renameBaseFocusNode.dispose();
+    _renameBaseController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadItems() async {
     setState(() => _loading = true);
     final values = await _dependencies.fileRepository.listItems(_currentSource);
     if (!mounted) {
       return;
     }
+    final previousFocusedId = _focusedItem?.id;
+    final previousPreviewId = _previewItem?.id;
 
     setState(() {
       _items = values;
@@ -118,8 +132,19 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         _focusedItem = values.where((item) => item.type != FileItemType.folder).firstOrNull;
         _previewItem = _focusedItem;
       }
+      if (previousFocusedId != null) {
+        final candidates = _currentSource == FileSource.phone ? _currentPhoneEntries : values;
+        _focusedItem = candidates.where((item) => item.id == previousFocusedId).firstOrNull ?? _focusedItem;
+      }
+      if (previousPreviewId != null) {
+        final matchedPreview = values.where((item) => item.id == previousPreviewId).firstOrNull;
+        if (matchedPreview != null && matchedPreview.type != FileItemType.folder) {
+          _previewItem = matchedPreview;
+        }
+      }
       _loading = false;
     });
+    _syncInlineRenameDraft();
   }
 
   void _syncPhoneNavigation(List<FileItem> values) {
@@ -193,28 +218,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     }
   }
 
-  Future<void> _openRenameSheet(FileItem item) async {
-    final value = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => RenameSheet(
-        currentName: item.name,
-        confirmLabel: _operationMode == RenameOperationMode.workInPlace
-            ? 'Confirm rename'
-            : 'Create duplicate',
-        suggestionsLoader: () => _getAiRenameSuggestionsUseCase(
-          currentName: item.name,
-          context: item.type.name,
-        ),
-      ),
-    );
-
-    if (value == null || value.isEmpty || value == item.name) {
-      return;
-    }
-    await _applyRenameChange(item: item, newName: value);
-  }
-
   Future<void> _applyRenameChange({
     required FileItem item,
     required String newName,
@@ -239,6 +242,59 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Duplicate created as "$newName"')),
     );
+  }
+
+  void _syncInlineRenameDraft() {
+    final item = _previewItem;
+    if (item == null || item.type == FileItemType.folder) {
+      _renameTargetFileId = null;
+      _renameLockedExtension = '';
+      if (_renameBaseController.text.isNotEmpty) {
+        _renameBaseController.clear();
+      }
+      return;
+    }
+    if (_renameTargetFileId == item.id) {
+      return;
+    }
+    final (base, extension) = _splitName(item.name);
+    _renameTargetFileId = item.id;
+    _renameLockedExtension = extension;
+    _renameBaseController.value = TextEditingValue(
+      text: base,
+      selection: TextSelection.collapsed(offset: base.length),
+    );
+  }
+
+  Future<void> _commitInlineRename() async {
+    if (_renameApplying) {
+      return;
+    }
+    final item = _previewItem;
+    if (item == null || item.type == FileItemType.folder) {
+      return;
+    }
+    final base = _renameBaseController.text.trim();
+    if (base.isEmpty) {
+      _syncInlineRenameDraft();
+      return;
+    }
+    final nextName =
+        _renameLockedExtension.isEmpty ? base : '$base.$_renameLockedExtension';
+    if (nextName == item.name) {
+      return;
+    }
+
+    _renameApplying = true;
+    try {
+      await _applyRenameChange(item: item, newName: nextName);
+      if (!mounted) {
+        return;
+      }
+      _syncInlineRenameDraft();
+    } finally {
+      _renameApplying = false;
+    }
   }
 
   Future<void> _replaceCurrentFolderOriginals() async {
@@ -268,6 +324,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       _focusedItem = item;
       _previewItem = item;
     });
+    _syncInlineRenameDraft();
   }
 
   Future<void> _navigateIntoFolder(String folderPath) async {
@@ -283,6 +340,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         _focusedItem = visible.first;
       }
     });
+    _syncInlineRenameDraft();
     await _hydratePhoneFolderBranchIfNeeded(folderPath);
     if (!mounted) {
       return;
@@ -293,6 +351,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         _focusedItem = visible.first;
       }
     });
+    _syncInlineRenameDraft();
   }
 
   void _goUpOneFolder() {
@@ -315,6 +374,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         _focusedItem = visible.first;
       }
     });
+    _syncInlineRenameDraft();
   }
 
   List<FileItem> _visiblePhoneEntries() {
@@ -740,9 +800,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final compact = constraints.maxWidth < 420;
-              final renameLabel = _operationMode == RenameOperationMode.workInPlace
-                  ? 'Rename (sheet)'
-                  : 'Duplicate (sheet)';
+              final renameEditor = _buildInlineRenameEditor();
 
               if (compact) {
                 return Column(
@@ -756,15 +814,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    SizedBox(
-                      width: double.infinity,
-                      child: AppButton.primary(
-                        label: renameLabel,
-                        onPressed: _previewItem == null || _previewItem!.type == FileItemType.folder
-                            ? null
-                            : () => _openRenameSheet(_previewItem!),
-                      ),
-                    ),
+                    renameEditor,
                     if (_operationMode == RenameOperationMode.duplicate &&
                         _currentSource == FileSource.phone &&
                         _phoneCurrentPath != null) ...[
@@ -781,28 +831,18 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                 );
               }
 
-              return Column(
+                return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AppButton.secondary(
-                          label: 'Tidy Up',
-                          onPressed: () => Navigator.of(context).pushNamed(AppRoutes.tidyUpSetup),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: AppButton.primary(
-                          label: renameLabel,
-                          onPressed: _previewItem == null || _previewItem!.type == FileItemType.folder
-                              ? null
-                              : () => _openRenameSheet(_previewItem!),
-                        ),
-                      ),
-                    ],
+                  SizedBox(
+                    width: double.infinity,
+                    child: AppButton.secondary(
+                      label: 'Tidy Up',
+                      onPressed: () => Navigator.of(context).pushNamed(AppRoutes.tidyUpSetup),
+                    ),
                   ),
+                  const SizedBox(height: AppSpacing.sm),
+                  renameEditor,
                   if (_operationMode == RenameOperationMode.duplicate &&
                       _currentSource == FileSource.phone &&
                       _phoneCurrentPath != null) ...[
@@ -871,5 +911,64 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       case FileItemType.document:
         return const Icon(Icons.description_outlined);
     }
+  }
+
+  Widget _buildInlineRenameEditor() {
+    final item = _previewItem;
+    if (item == null || item.type == FileItemType.folder) {
+      return const SizedBox(
+        width: double.infinity,
+        child: Text('Select a file to rename.'),
+      );
+    }
+
+    final label = _operationMode == RenameOperationMode.workInPlace
+        ? 'Rename'
+        : 'Duplicate As';
+    final extensionLabel = _renameLockedExtension.isEmpty ? '' : '.$_renameLockedExtension';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: AppSpacing.xs),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _renameBaseController,
+                focusNode: _renameBaseFocusNode,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _commitInlineRename(),
+                enabled: !_renameApplying,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Enter file name',
+                  isDense: true,
+                ),
+              ),
+            ),
+            if (extensionLabel.isNotEmpty) ...[
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                extensionLabel,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  (String, String) _splitName(String fullName) {
+    final dotIndex = fullName.lastIndexOf('.');
+    if (dotIndex <= 0 || dotIndex == fullName.length - 1) {
+      return (fullName, '');
+    }
+    final base = fullName.substring(0, dotIndex);
+    final extension = fullName.substring(dotIndex + 1);
+    return (base, extension);
   }
 }
