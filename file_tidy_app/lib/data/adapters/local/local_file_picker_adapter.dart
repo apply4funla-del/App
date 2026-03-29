@@ -57,21 +57,48 @@ class LocalFilePickerAdapter implements LocalFilePickerService {
     }
 
     final items = <FileItem>[];
+    final seenFolderPaths = <String>{};
+    var importedFileCount = 0;
     final pendingDirectories = <Directory>[directory];
 
-    while (pendingDirectories.isNotEmpty && items.length < _maxFolderImportCount) {
+    while (pendingDirectories.isNotEmpty && importedFileCount < _maxFolderImportCount) {
       final current = pendingDirectories.removeLast();
+      if (seenFolderPaths.add(current.path)) {
+        items.add(
+          FileItem(
+            id: 'folder_${current.path}',
+            name: current.path.split(Platform.pathSeparator).last,
+            type: FileItemType.folder,
+            source: FileSource.phone,
+            path: current.path,
+            parentPath: current.parent.path,
+          ),
+        );
+      }
       try {
-        final stream = current.list(followLinks: false).handleError((_) {});
-        await for (final entity in stream) {
-          if (items.length >= _maxFolderImportCount) {
+        final entities = current.listSync(followLinks: false);
+        for (final entity in entities) {
+          if (importedFileCount >= _maxFolderImportCount) {
             break;
           }
           if (entity is File) {
             items.add(_itemFromPath(entity.path, items.length));
+            importedFileCount += 1;
             continue;
           }
           if (entity is Directory) {
+            if (seenFolderPaths.add(entity.path)) {
+              items.add(
+                FileItem(
+                  id: 'folder_${entity.path}',
+                  name: entity.path.split(Platform.pathSeparator).last,
+                  type: FileItemType.folder,
+                  source: FileSource.phone,
+                  path: entity.path,
+                  parentPath: entity.parent.path,
+                ),
+              );
+            }
             pendingDirectories.add(entity);
           }
         }

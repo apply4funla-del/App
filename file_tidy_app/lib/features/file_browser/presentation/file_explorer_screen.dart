@@ -80,6 +80,10 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     _currentSource = widget.config.source;
     _operationMode = widget.config.operationMode;
     _phoneFolderBrowsingEnabled = _currentSource == FileSource.phone;
+    if (_currentSource == FileSource.phone && widget.config.initialPhoneRootPath != null) {
+      _phoneRootPath = widget.config.initialPhoneRootPath;
+      _phoneCurrentPath = widget.config.initialPhoneRootPath;
+    }
     _loadItems();
 
     if (widget.config.requestFolderOnStart && _currentSource == FileSource.phone) {
@@ -155,7 +159,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     if (!mounted) {
       return;
     }
-    if (result == null || result.files.isEmpty) {
+    if (result == null || !_hasBrowsableEntries(result)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Pick a folder to amend the content.')),
       );
@@ -310,7 +314,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
     final separator = Platform.pathSeparator;
     final normalizedCurrent = current.endsWith(separator) ? current : '$current$separator';
-    final folderPaths = <String>{};
+    final folderMap = <String, FileItem>{};
     final files = <FileItem>[];
 
     for (final item in _items) {
@@ -323,35 +327,61 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       }
 
       if (item.parentPath == current) {
-        files.add(item);
+        if (item.type == FileItemType.folder) {
+          folderMap[path] = item;
+        } else {
+          files.add(item);
+        }
         continue;
       }
 
       final remainder = path.substring(normalizedCurrent.length);
       if (!remainder.contains(separator)) {
-        files.add(item.copyWith(name: remainder));
+        if (item.type == FileItemType.folder) {
+          folderMap[path] = item.copyWith(name: remainder);
+        } else {
+          files.add(item.copyWith(name: remainder));
+        }
         continue;
       }
       final firstSegment = remainder.split(separator).first;
-      folderPaths.add('$current$separator$firstSegment');
+      final folderPath = '$current$separator$firstSegment';
+      folderMap.putIfAbsent(
+        folderPath,
+        () => FileItem(
+          id: 'folder_$folderPath',
+          name: firstSegment,
+          type: FileItemType.folder,
+          source: FileSource.phone,
+          path: folderPath,
+          parentPath: current,
+        ),
+      );
     }
 
-    final folderItems = folderPaths
-        .map(
-          (folder) => FileItem(
-            id: 'folder_$folder',
-            name: folder.split(separator).last,
-            type: FileItemType.folder,
-            source: FileSource.phone,
-            path: folder,
-            parentPath: current,
-          ),
-        )
-        .toList()
+    final folderItems = folderMap.values.toList()
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     files.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     return [...folderItems, ...files];
+  }
+
+  bool _hasBrowsableEntries(LocalFolderImportResult result) {
+    final separator = Platform.pathSeparator;
+    final normalizedRoot = result.rootPath.endsWith(separator)
+        ? result.rootPath
+        : '${result.rootPath}$separator';
+
+    for (final item in result.files) {
+      final path = item.path;
+      if (path == null || path == result.rootPath) {
+        continue;
+      }
+      if (item.parentPath == result.rootPath || path.startsWith(normalizedRoot)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   String _deriveCommonRootPath(List<FileItem> items) {

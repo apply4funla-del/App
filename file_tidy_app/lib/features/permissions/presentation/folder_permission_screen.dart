@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:file_tidy_app/app/app_router.dart';
 import 'package:file_tidy_app/app/dependency_container.dart';
 import 'package:file_tidy_app/core/models/explorer_launch_config.dart';
+import 'package:file_tidy_app/core/models/local_folder_import_result.dart';
 import 'package:file_tidy_app/core/use_cases/import_local_folder_use_case.dart';
 import 'package:file_tidy_app/design_system/components/app_button.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
@@ -41,12 +44,13 @@ class _FolderPermissionScreenState extends State<FolderPermissionScreen> {
     }
     setState(() => _loading = false);
 
-    if (result == null || result.files.isEmpty) {
+    if (result == null || !_hasBrowsableEntries(result)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Pick a folder to amend the content.'),
         ),
       );
+      return;
     }
 
     Navigator.of(context).pushNamedAndRemoveUntil(
@@ -56,8 +60,27 @@ class _FolderPermissionScreenState extends State<FolderPermissionScreen> {
         source: widget.config.source,
         operationMode: widget.config.operationMode,
         requestFolderOnStart: false,
+        initialPhoneRootPath: result.rootPath,
       ),
     );
+  }
+
+  bool _hasBrowsableEntries(LocalFolderImportResult result) {
+    final separator = Platform.pathSeparator;
+    final normalizedRoot = result.rootPath.endsWith(separator)
+        ? result.rootPath
+        : '${result.rootPath}$separator';
+
+    for (final item in result.files) {
+      final path = item.path;
+      if (path == null || path == result.rootPath) {
+        continue;
+      }
+      if (item.parentPath == result.rootPath || path.startsWith(normalizedRoot)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @override

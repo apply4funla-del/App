@@ -66,6 +66,10 @@ class InMemoryFileRepository implements FileRepository {
     if (items.isEmpty) {
       return;
     }
+    if (source == FileSource.phone) {
+      _store[source] = [...items];
+      return;
+    }
     _store[source] = [...(_store[source] ?? []), ...items];
   }
 

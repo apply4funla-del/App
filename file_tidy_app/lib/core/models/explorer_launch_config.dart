@@ -6,9 +6,11 @@ class ExplorerLaunchConfig {
     required this.source,
     required this.operationMode,
     this.requestFolderOnStart = false,
+    this.initialPhoneRootPath,
   });
 
   final FileSource source;
   final RenameOperationMode operationMode;
   final bool requestFolderOnStart;
+  final String? initialPhoneRootPath;
 }
