@@ -25,6 +25,12 @@ class LocalFilePickerAdapter implements LocalFilePickerService {
         'json',
         'doc',
         'docx',
+        'xls',
+        'xlsx',
+        'ppt',
+        'pptx',
+        'mp4',
+        'mov',
       ],
     );
 
