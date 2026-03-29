@@ -26,6 +26,7 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
 
   bool _loading = false;
   Map<FileSource, ConnectorAccountState> _states = {};
+  FileSource? _selectedSource;
 
   @override
   void initState() {
@@ -115,6 +116,25 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
     );
   }
 
+  void _goToMethod() {
+    final source = _selectedSource;
+    if (source == null) {
+      return;
+    }
+    final connected = _states[source]?.connected ?? (source == FileSource.phone);
+    if (!connected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Connect ${source.label} first.')),
+      );
+      return;
+    }
+
+    Navigator.of(context).pushNamed(
+      AppRoutes.method,
+      arguments: source,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -125,17 +145,15 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
               padding: const EdgeInsets.all(AppSpacing.md),
               child: ListView(
                 children: [
-                  const Text(
-                    'Connect only the sources you need. You can disconnect anytime.',
-                  ),
+                  const Text('Tap one source to continue.'),
                   const SizedBox(height: AppSpacing.md),
                   ...FileSource.values.map((source) => _buildConnectorCard(source)),
                   const SizedBox(height: AppSpacing.md),
                   SizedBox(
                     width: double.infinity,
                     child: AppButton.primary(
-                      label: 'Next: Choose folders',
-                      onPressed: () => Navigator.of(context).pushNamed(AppRoutes.folderPermission),
+                      label: 'Next: Method',
+                      onPressed: _selectedSource == null ? null : _goToMethod,
                     ),
                   ),
                 ],
@@ -148,6 +166,8 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
     final state = _states[source];
     final connected = state?.connected ?? (source == FileSource.phone);
     final label = state?.accountLabel;
+    final selected = _selectedSource == source;
+
     final action = source == FileSource.phone
         ? const Text('Always On')
         : connected
@@ -161,35 +181,40 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
               );
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(_iconFor(source)),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(source.label, style: Theme.of(context).textTheme.titleMedium),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        connected ? 'Connected${label == null ? '' : ' as $label'}' : 'Not connected',
-                      ),
-                    ],
+      color: selected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08) : null,
+      child: InkWell(
+        onTap: () => setState(() => _selectedSource = source),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(_iconFor(source)),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(source.label, style: Theme.of(context).textTheme.titleMedium),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          connected ? 'Connected${label == null ? '' : ' as $label'}' : 'Not connected',
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Align(
-              alignment: Alignment.centerRight,
-              child: action,
-            ),
-          ],
+                  if (selected) const Icon(Icons.check_circle_outline),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Align(
+                alignment: Alignment.centerRight,
+                child: action,
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_tidy_app/app/app_router.dart';
 import 'package:file_tidy_app/app/dependency_container.dart';
 import 'package:file_tidy_app/core/config/feature_flags.dart';
+import 'package:file_tidy_app/core/models/explorer_launch_config.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/models/local_folder_import_result.dart';
 import 'package:file_tidy_app/core/models/rename_operation_mode.dart';
@@ -21,7 +22,12 @@ import 'package:file_tidy_app/features/rename_manual/presentation/rename_sheet.d
 import 'package:flutter/material.dart';
 
 class FileExplorerScreen extends StatefulWidget {
-  const FileExplorerScreen({super.key});
+  const FileExplorerScreen({
+    super.key,
+    required this.config,
+  });
+
+  final ExplorerLaunchConfig config;
 
   @override
   State<FileExplorerScreen> createState() => _FileExplorerScreenState();
@@ -48,6 +54,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   String? _phoneCurrentPath;
   bool _phoneFolderBrowsingEnabled = false;
   RenameOperationMode _operationMode = RenameOperationMode.workInPlace;
+  bool _requestedFolderOnStart = false;
 
   bool get _isPhoneEmptyState =>
       _currentSource == FileSource.phone && _items.isEmpty;
@@ -81,7 +88,20 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       _dependencies.localFilePickerService,
       _dependencies.fileRepository,
     );
+    _currentSource = widget.config.source;
+    _operationMode = widget.config.operationMode;
+    _phoneFolderBrowsingEnabled = _currentSource == FileSource.phone;
     _loadItems();
+
+    if (widget.config.requestFolderOnStart && _currentSource == FileSource.phone) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted || _requestedFolderOnStart) {
+          return;
+        }
+        _requestedFolderOnStart = true;
+        await _importLocalFolder();
+      });
+    }
   }
 
   @override
@@ -138,32 +158,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         );
       }
     }
-  }
-
-  Future<void> _importLocalFiles() async {
-    if (_currentSource != FileSource.phone) {
-      return;
-    }
-    final files = await _importLocalFilesUseCase();
-    if (!mounted) {
-      return;
-    }
-    if (files.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No files imported.')),
-      );
-      return;
-    }
-    _phoneFolderBrowsingEnabled = false;
-    _phoneRootPath = null;
-    _phoneCurrentPath = null;
-    await _loadItems();
-    if (!mounted) {
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Imported ${files.length} file(s).')),
-    );
   }
 
   Future<void> _importLocalFolder() async {
@@ -380,13 +374,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     });
   }
 
-  void _focusItem(FileItem item) {
-    setState(() {
-      _focusedItem = item;
-      _renameController.text = item.name;
-    });
-  }
-
   void _openItemInLandscape(FileItem item) {
     if (_currentSource == FileSource.phone && item.type == FileItemType.folder) {
       _navigateIntoFolder(item.path ?? _phoneCurrentPath ?? '');
@@ -488,45 +475,10 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               onPressed: () => Navigator.of(context).pushNamed(AppRoutes.usbArchive),
             ),
           if (_currentSource == FileSource.phone)
-            PopupMenuButton<String>(
-              tooltip: 'Phone import options',
-              onSelected: (value) {
-                if (value == 'folder') {
-                  _importLocalFolder();
-                  return;
-                }
-                if (value == 'files') {
-                  _importLocalFiles();
-                  return;
-                }
-                _showImportHelp();
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem<String>(
-                  value: 'folder',
-                  child: Text('Open Folder (browse folders/files)'),
-                ),
-                PopupMenuItem<String>(
-                  value: 'files',
-                  child: Text('Import Files Only (flat list)'),
-                ),
-                PopupMenuItem<String>(
-                  value: 'help',
-                  child: Text('What is the difference?'),
-                ),
-              ],
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                child: Row(
-                  children: [
-                    Icon(Icons.file_open_outlined),
-                    SizedBox(width: AppSpacing.xs),
-                    Text('Import'),
-                    SizedBox(width: AppSpacing.xs),
-                    Icon(Icons.expand_more, size: 18),
-                  ],
-                ),
-              ),
+            IconButton(
+              icon: const Icon(Icons.folder_open_outlined),
+              tooltip: 'Choose folder',
+              onPressed: _importLocalFolder,
             ),
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.md),
@@ -667,7 +619,11 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                   ),
           ),
         Expanded(
-          child: ListView.builder(
+          child: ListTileTheme(
+            data: const ListTileThemeData(
+              subtitleTextStyle: TextStyle(fontSize: 0, height: 0),
+            ),
+            child: ListView.builder(
             itemCount: entries.length,
             itemBuilder: (context, index) {
               final item = entries[index];
@@ -681,12 +637,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                           ? 'Duplicate copy • ${item.parentPath}'
                           : item.parentPath,
                 ),
-                trailing: item.type == FileItemType.folder
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.drive_file_rename_outline),
-                        onPressed: () => _openRenameSheet(item),
-                      ),
                 onTap: () {
                   if (item.type == FileItemType.folder) {
                     _navigateIntoFolder(item.path ?? '');
@@ -696,6 +646,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                 },
               );
             },
+            ),
           ),
         ),
       ],
@@ -713,23 +664,18 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               const Icon(Icons.file_open_outlined, size: 42),
               const SizedBox(height: AppSpacing.md),
               const Text(
-                'No phone folder loaded yet.',
+                'No folder loaded yet.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.xs),
               const Text(
-                'Choose a folder from your phone to start browsing.',
+                'Grant permission and choose a folder to start browsing.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.md),
               AppButton.primary(
                 label: 'Open phone folder',
                 onPressed: _importLocalFolder,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              AppButton.secondary(
-                label: 'Or import file(s)',
-                onPressed: _importLocalFiles,
               ),
             ],
           ),
@@ -762,14 +708,17 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                         ),
                 ),
               Expanded(
-                child: ListView.builder(
+                child: ListTileTheme(
+                  data: const ListTileThemeData(
+                    subtitleTextStyle: TextStyle(fontSize: 0, height: 0),
+                  ),
+                  child: ListView.builder(
                   itemCount: entries.length,
                   itemBuilder: (context, index) {
                     final item = entries[index];
                     final selected = _focusedItem?.id == item.id;
                     return InkWell(
-                      onTap: () => _focusItem(item),
-                      onDoubleTap: () => _openItemInLandscape(item),
+                      onTap: () => _openItemInLandscape(item),
                       child: ListTile(
                         selected: selected,
                         leading: _iconFor(item.type),
@@ -784,6 +733,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                       ),
                     );
                   },
+                  ),
                 ),
               ),
               if (_focusedItem != null && _focusedItem!.type != FileItemType.folder)
@@ -961,26 +911,4 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     );
   }
 
-  Future<void> _showImportHelp() async {
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Import options'),
-        content: const Text(
-          'Open Folder: lets you browse folders on the left panel.\n\n'
-          'Import Files Only: adds selected files directly into a flat list, without folder navigation.\n\n'
-          'If prompted, grant folder access. If some files are still restricted by Android, use Import Files Only.',
-        ),
-        actions: [
-          SizedBox(
-            width: 100,
-            child: AppButton.secondary(
-              label: 'Close',
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

@@ -1,7 +1,11 @@
+import 'package:file_tidy_app/core/models/explorer_launch_config.dart';
+import 'package:file_tidy_app/core/models/file_item.dart';
+import 'package:file_tidy_app/core/models/rename_operation_mode.dart';
 import 'package:file_tidy_app/features/auth/presentation/sign_in_screen.dart';
 import 'package:file_tidy_app/features/connectors/presentation/connector_picker_screen.dart';
 import 'package:file_tidy_app/features/file_browser/presentation/file_explorer_screen.dart';
 import 'package:file_tidy_app/features/history_undo/presentation/history_screen.dart';
+import 'package:file_tidy_app/features/method/presentation/method_screen.dart';
 import 'package:file_tidy_app/features/onboarding/presentation/welcome_screen.dart';
 import 'package:file_tidy_app/features/permissions/presentation/folder_permission_screen.dart';
 import 'package:file_tidy_app/features/privacy_center/presentation/privacy_center_screen.dart';
@@ -18,6 +22,7 @@ class AppRoutes {
   static const String welcome = '/welcome';
   static const String signIn = '/sign-in';
   static const String connectorPicker = '/connectors';
+  static const String method = '/method';
   static const String folderPermission = '/folder-permission';
   static const String explorer = '/explorer';
   static const String tidyUpSetup = '/tidy-up-setup';
@@ -40,10 +45,25 @@ class AppRouter {
         return _material(const SignInScreen());
       case AppRoutes.connectorPicker:
         return _material(const ConnectorPickerScreen());
+      case AppRoutes.method:
+        final source = settings.arguments is FileSource ? settings.arguments as FileSource : FileSource.phone;
+        return _material(MethodScreen(source: source));
       case AppRoutes.folderPermission:
-        return _material(const FolderPermissionScreen());
+        final config = settings.arguments is ExplorerLaunchConfig
+            ? settings.arguments as ExplorerLaunchConfig
+            : const ExplorerLaunchConfig(
+                source: FileSource.phone,
+                operationMode: RenameOperationMode.workInPlace,
+              );
+        return _material(FolderPermissionScreen(config: config));
       case AppRoutes.explorer:
-        return _material(const FileExplorerScreen());
+        final config = settings.arguments is ExplorerLaunchConfig
+            ? settings.arguments as ExplorerLaunchConfig
+            : const ExplorerLaunchConfig(
+                source: FileSource.phone,
+                operationMode: RenameOperationMode.workInPlace,
+              );
+        return _material(FileExplorerScreen(config: config));
       case AppRoutes.tidyUpSetup:
         return _material(const TidyUpSetupScreen());
       case AppRoutes.tidyUpReview:
