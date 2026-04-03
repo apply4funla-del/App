@@ -54,6 +54,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   String? _renameTargetFileId;
   String _renameLockedExtension = '';
   bool _renameApplying = false;
+  bool _renameBarVisible = false;
   _ExplorerSortType _sortType = _ExplorerSortType.name;
 
   List<FileItem> get _currentPhoneEntries {
@@ -245,6 +246,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     if (item == null || item.type == FileItemType.folder) {
       _renameTargetFileId = null;
       _renameLockedExtension = '';
+      _renameBarVisible = false;
       if (_renameBaseController.text.isNotEmpty) {
         _renameBaseController.clear();
       }
@@ -287,6 +289,9 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       if (!mounted) {
         return;
       }
+      setState(() {
+        _renameBarVisible = false;
+      });
       _syncInlineRenameDraft();
     } finally {
       _renameApplying = false;
@@ -657,6 +662,21 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               tooltip: 'Choose folder',
               onPressed: _importLocalFolder,
             ),
+          IconButton(
+            icon: Icon(
+              _renameBarVisible
+                  ? Icons.keyboard_arrow_up_rounded
+                  : Icons.drive_file_rename_outline,
+            ),
+            tooltip: _renameBarVisible ? 'Hide rename' : 'Rename selected file',
+            onPressed: _previewItem == null || _previewItem?.type == FileItemType.folder
+                ? null
+                : () {
+                    setState(() {
+                      _renameBarVisible = !_renameBarVisible;
+                    });
+                  },
+          ),
           PopupMenuButton<_ExplorerSortType>(
             tooltip: 'Sort',
             icon: const Icon(Icons.sort),
@@ -820,12 +840,12 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   PreferredSizeWidget? _buildRenameAppBarBottom() {
     final item = _previewItem;
-    if (item == null || item.type == FileItemType.folder) {
+    if (!_renameBarVisible || item == null || item.type == FileItemType.folder) {
       return null;
     }
 
     return PreferredSize(
-      preferredSize: const Size.fromHeight(74),
+      preferredSize: const Size.fromHeight(72),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.md,

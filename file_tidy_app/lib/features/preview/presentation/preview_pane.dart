@@ -39,25 +39,36 @@ class PreviewPane extends StatelessWidget {
       }
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(item!.name, style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: AppSpacing.sm),
-              Text('Source: ${item!.source.label}'),
-              const SizedBox(height: AppSpacing.xs),
-              Text('Type: ${item!.type.name}'),
-              const SizedBox(height: AppSpacing.lg),
-              Expanded(child: _buildBody()),
-            ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Scrollbar(
+          thumbVisibility: true,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight - (AppSpacing.md * 2)),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(item!.name, style: Theme.of(context).textTheme.titleLarge),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text('Source: ${item!.source.label}'),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text('Type: ${item!.type.name}'),
+                      const SizedBox(height: AppSpacing.lg),
+                      _buildBody(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -118,8 +129,9 @@ class PreviewPane extends StatelessWidget {
           }
           final content = snapshot.data ?? '';
           final preview = content.length > 5000 ? '${content.substring(0, 5000)}\n...' : content;
-          return SingleChildScrollView(
-            child: Text(preview),
+          return SelectableText(
+            preview,
+            style: Theme.of(context).textTheme.bodyMedium,
           );
         },
       );
@@ -149,8 +161,9 @@ class PreviewPane extends StatelessWidget {
           );
         }
         final preview = text.length > 9000 ? '${text.substring(0, 9000)}\n...' : text;
-        return SingleChildScrollView(
-          child: Text(preview),
+        return SelectableText(
+          preview,
+          style: Theme.of(context).textTheme.bodyMedium,
         );
       },
     );
@@ -168,12 +181,16 @@ class PreviewPane extends StatelessWidget {
             child: Text('Unable to load this image preview.'),
           );
         }
-        return InteractiveViewer(
-          child: Image.memory(
-            snapshot.data!,
-            fit: BoxFit.contain,
-            errorBuilder: (_, error, stackTrace) => const Center(
-              child: Text('This image format is not supported for preview.'),
+        return SizedBox(
+          height: 420,
+          width: double.infinity,
+          child: InteractiveViewer(
+            child: Image.memory(
+              snapshot.data!,
+              fit: BoxFit.contain,
+              errorBuilder: (_, error, stackTrace) => const Center(
+                child: Text('This image format is not supported for preview.'),
+              ),
             ),
           ),
         );
@@ -204,7 +221,8 @@ class PreviewPane extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
+            SizedBox(
+              height: 360,
               child: InteractiveViewer(
                 child: Image.memory(
                   snapshot.data!,
