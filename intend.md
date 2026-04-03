@@ -1,6 +1,6 @@
 # Project Intent: Mobile File Tidy Assistant
 
-Last updated: 2026-03-28  
+Last updated: 2026-04-03  
 Owner: apply4funla-del/App project
 
 ## One-line vision
@@ -62,6 +62,18 @@ We are building a mobile-first file organization app that turns file cleanup fro
   - Inline rename must work in both portrait and landscape modes.
   - Explorer bottom bar must expose five actions: History, Settings, Privacy, USB Archive, and AI Assist.
   - Settings must contain subscription management and logout.
+
+## Locked Explorer layout summary (2026-04-03)
+- The current Explorer structure is approved and should be treated as the working baseline.
+- The right preview panel is now large enough for practical use and must keep priority over extra controls.
+- The right panel must support scrolling for long document previews and metadata-heavy previews.
+- PDF preview should use the full preview area where possible.
+- Image preview and MP4 thumbnail preview should stay inside scroll-safe containers and must not trigger overflow warnings.
+- The rename bar stays visible at the top.
+- The Explorer controls row is the part that stays hidden by default, and user can reveal it from the top area when needed.
+- The layout must avoid yellow/black overflow warnings in normal desktop and phone-sized windows.
+- Do not reintroduce action buttons inside the right preview panel.
+- If future UI changes reduce preview area, increase overflow risk, or hide rename by default again, that is drift and should be rejected.
 
 ## Cloud and file access requirements
 - Support local phone files.
