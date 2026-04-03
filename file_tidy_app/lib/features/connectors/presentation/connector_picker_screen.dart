@@ -1,8 +1,10 @@
 import 'package:file_tidy_app/app/app_router.dart';
 import 'package:file_tidy_app/app/dependency_container.dart';
+import 'package:file_tidy_app/core/models/app_user_session.dart';
 import 'package:file_tidy_app/core/models/connector_account_state.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/use_cases/connect_connector_use_case.dart';
+import 'package:file_tidy_app/core/use_cases/get_current_user_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/disconnect_connector_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/list_connector_states_use_case.dart';
 import 'package:file_tidy_app/design_system/components/app_button.dart';
@@ -23,10 +25,12 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
   late final ConnectConnectorUseCase _connectConnectorUseCase;
   late final DisconnectConnectorUseCase _disconnectConnectorUseCase;
   late final ListConnectorStatesUseCase _listConnectorStatesUseCase;
+  late final GetCurrentUserUseCase _getCurrentUserUseCase;
 
   bool _loading = false;
   Map<FileSource, ConnectorAccountState> _states = {};
   FileSource? _selectedSource;
+  AppUserSession? _currentUser;
 
   @override
   void initState() {
@@ -34,17 +38,20 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
     _connectConnectorUseCase = ConnectConnectorUseCase(_dependencies.connectorAuthRepository);
     _disconnectConnectorUseCase = DisconnectConnectorUseCase(_dependencies.connectorAuthRepository);
     _listConnectorStatesUseCase = ListConnectorStatesUseCase(_dependencies.connectorAuthRepository);
+    _getCurrentUserUseCase = GetCurrentUserUseCase(_dependencies.appAuthRepository);
     _refresh();
   }
 
   Future<void> _refresh() async {
     setState(() => _loading = true);
     final values = await _listConnectorStatesUseCase();
+    final currentUser = await _getCurrentUserUseCase();
     if (!mounted) {
       return;
     }
     setState(() {
       _states = values;
+      _currentUser = currentUser;
       _loading = false;
     });
   }
@@ -52,6 +59,16 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
   Future<void> _connect(FileSource source) async {
     if (source == FileSource.phone) {
       await _refresh();
+      return;
+    }
+    if (_currentUser == null) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in first to access Google Drive and Dropbox.')),
+      );
+      Navigator.of(context).pushNamed(AppRoutes.signIn);
       return;
     }
 
@@ -149,6 +166,12 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
                   padding: const EdgeInsets.all(AppSpacing.md),
                   child: ListView(
                     children: [
+                      Text(
+                        _currentUser == null
+                            ? 'Using free mode. Sign in to access Google Drive and Dropbox.'
+                            : 'Signed in as ${_currentUser!.email}',
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
                       const Text('Tap one source to continue.'),
                       const SizedBox(height: AppSpacing.md),
                       if (landscapeGrid)
@@ -199,8 +222,15 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
     final label = state?.accountLabel;
     final selected = _selectedSource == source;
 
+    final cloudRequiresSignIn = source != FileSource.phone && _currentUser == null;
+
     final action = source == FileSource.phone
         ? const Text('Always On')
+        : cloudRequiresSignIn
+            ? AppButton.secondary(
+                label: 'Sign In',
+                onPressed: () => Navigator.of(context).pushNamed(AppRoutes.signIn),
+              )
         : connected
             ? AppButton.secondary(
                 label: 'Disconnect',
@@ -246,6 +276,8 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
                   Text(
                     source == FileSource.phone
                         ? 'Use files already on this device.'
+                        : cloudRequiresSignIn
+                            ? 'Sign in to enable this cloud source.'
                         : 'Connect this cloud source before continuing.',
                   ),
                 if (compact) const Spacer() else const SizedBox(height: AppSpacing.sm),

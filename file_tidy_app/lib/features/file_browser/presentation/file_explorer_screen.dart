@@ -8,6 +8,7 @@ import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/models/local_folder_import_result.dart';
 import 'package:file_tidy_app/core/models/rename_operation_mode.dart';
 import 'package:file_tidy_app/core/use_cases/duplicate_file_use_case.dart';
+import 'package:file_tidy_app/core/use_cases/get_subscription_status_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/import_local_folder_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/rename_file_use_case.dart';
 import 'package:file_tidy_app/design_system/components/app_button.dart';
@@ -292,6 +293,20 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     } finally {
       _renameApplying = false;
     }
+  }
+
+  Future<void> _openUsbArchive() async {
+    final subscription = await GetSubscriptionStatusUseCase(
+      _dependencies.subscriptionRepository,
+    )();
+    if (!mounted) {
+      return;
+    }
+    if (!subscription.canUseUsbArchive) {
+      Navigator.of(context).pushNamed(AppRoutes.subscription);
+      return;
+    }
+    Navigator.of(context).pushNamed(AppRoutes.usbArchive);
   }
 
   Future<void> _openItemInSplit(FileItem item) async {
@@ -996,7 +1011,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       ),
       (
         label: 'USB Archive',
-        onPressed: () => Navigator.of(context).pushNamed(AppRoutes.usbArchive),
+        onPressed: _openUsbArchive,
         primary: false,
       ),
     ];

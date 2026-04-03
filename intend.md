@@ -1,6 +1,6 @@
 # Project Intent: Mobile File Tidy Assistant
 
-Last updated: 2026-04-03  
+Last updated: 2026-04-04  
 Owner: apply4funla-del/App project
 
 ## One-line vision
@@ -47,9 +47,15 @@ We are building a mobile-first file organization app that turns file cleanup fro
 - Onboarding layout requirements:
   - In landscape and wider desktop layouts, primary onboarding buttons like Get Started and Continue must not span the full width of the screen.
   - Keep onboarding actions constrained to a readable width while preserving full-width behavior on narrow phone layouts.
+- Sign-in requirements:
+  - Sign in must be optional. Users can continue in free mode without sign-in.
+  - Sign in must clearly explain: sign in is for Google Drive, Dropbox, and plan restore.
+  - Sign-in must use modular auth architecture and store account data in Supabase.
+  - Free mode must remain available when users skip sign-in.
 - Connect Source layout requirements:
   - Portrait layout can remain stacked.
   - In landscape/wide layouts, Phone, Google Drive, and Dropbox must appear as three horizontal square-style option boxes.
+  - Google Drive and Dropbox access must require sign-in first.
 - Permission handoff requirement:
   - After user grants folder permission, app must open Explorer immediately.
   - Do not block user behind generic "can't use this folder" style app messages.
@@ -87,6 +93,7 @@ We are building a mobile-first file organization app that turns file cleanup fro
 - Support Google Drive connection.
 - Support Dropbox connection.
 - Use secure sign-in and limited permissions.
+- Use Supabase as the current auth/subscription backend behind repository interfaces.
 - Let user choose which folders the app can access.
 - Show connected accounts and easy disconnect option.
 - Default processing modes:
@@ -111,6 +118,21 @@ We are building a mobile-first file organization app that turns file cleanup fro
 - AI provider key must never be in app.
 - All secret keys must stay server-side only.
 - Enforce strict per-user access rules in database.
+- Subscription status must be read from Supabase, not hardcoded in UI.
+
+## Monetization and access control (locked)
+- Free mode:
+  - Local phone tidy features remain free to use.
+  - Users can continue without sign-in.
+- Sign-in gated features:
+  - Google Drive requires sign-in.
+  - Dropbox requires sign-in.
+  - Plan restore requires sign-in.
+- Paid USB plan:
+  - USB archive is a paid feature.
+  - Monthly price: $8.90/month.
+  - Annual price: $3.90/month billed yearly.
+  - USB archive access must be gated by subscription status.
 
 ## Architecture principles (non-negotiable)
 

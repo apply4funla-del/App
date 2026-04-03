@@ -1,5 +1,7 @@
 import 'package:file_tidy_app/app/app_router.dart';
+import 'package:file_tidy_app/app/dependency_container.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
+import 'package:file_tidy_app/core/use_cases/get_subscription_status_use_case.dart';
 import 'package:file_tidy_app/design_system/components/app_button.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
 import 'package:flutter/material.dart';
@@ -17,9 +19,10 @@ class MethodScreen extends StatefulWidget {
 }
 
 class _MethodScreenState extends State<MethodScreen> {
+  final _dependencies = DependencyContainer.instance;
   String? _selectedAction;
 
-  void _continue() {
+  Future<void> _continue() async {
     if (_selectedAction == 'tidy') {
       Navigator.of(context).pushNamed(
         AppRoutes.tidyMethod,
@@ -28,6 +31,16 @@ class _MethodScreenState extends State<MethodScreen> {
       return;
     }
     if (_selectedAction == 'archive') {
+      final subscription = await GetSubscriptionStatusUseCase(
+        _dependencies.subscriptionRepository,
+      )();
+      if (!mounted) {
+        return;
+      }
+      if (!subscription.canUseUsbArchive) {
+        Navigator.of(context).pushNamed(AppRoutes.subscription);
+        return;
+      }
       Navigator.of(context).pushNamed(AppRoutes.usbArchive);
     }
   }

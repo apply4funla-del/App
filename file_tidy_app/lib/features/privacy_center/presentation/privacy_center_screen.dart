@@ -3,6 +3,7 @@ import 'package:file_tidy_app/app/dependency_container.dart';
 import 'package:file_tidy_app/core/models/connector_account_state.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/use_cases/list_connector_states_use_case.dart';
+import 'package:file_tidy_app/core/use_cases/sign_out_use_case.dart';
 import 'package:file_tidy_app/design_system/components/app_button.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,7 @@ class PrivacyCenterScreen extends StatefulWidget {
 class _PrivacyCenterScreenState extends State<PrivacyCenterScreen> {
   final _dependencies = DependencyContainer.instance;
   late final ListConnectorStatesUseCase _listConnectorStatesUseCase;
+  late final SignOutUseCase _signOutUseCase;
 
   bool _aiEnabled = true;
   bool _semiAuto = true;
@@ -27,7 +29,19 @@ class _PrivacyCenterScreenState extends State<PrivacyCenterScreen> {
   void initState() {
     super.initState();
     _listConnectorStatesUseCase = ListConnectorStatesUseCase(_dependencies.connectorAuthRepository);
+    _signOutUseCase = SignOutUseCase(_dependencies.appAuthRepository);
     _refresh();
+  }
+
+  Future<void> _logout() async {
+    await _signOutUseCase();
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      AppRoutes.signIn,
+      (route) => false,
+    );
   }
 
   Future<void> _refresh() async {
@@ -68,10 +82,7 @@ class _PrivacyCenterScreenState extends State<PrivacyCenterScreen> {
                     width: double.infinity,
                     child: AppButton.primary(
                       label: 'Logout',
-                      onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil(
-                        AppRoutes.signIn,
-                        (route) => false,
-                      ),
+                      onPressed: _logout,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),

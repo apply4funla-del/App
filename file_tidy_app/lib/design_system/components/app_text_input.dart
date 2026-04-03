@@ -6,16 +6,22 @@ class AppTextInput extends StatelessWidget {
     this.controller,
     required this.label,
     this.hintText,
+    this.obscureText = false,
+    this.keyboardType,
   });
 
   final TextEditingController? controller;
   final String label;
   final String? hintText;
+  final bool obscureText;
+  final TextInputType? keyboardType;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
       decoration: InputDecoration(
         labelText: label,
         hintText: hintText,
