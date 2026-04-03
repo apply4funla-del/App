@@ -1,3 +1,4 @@
+import 'package:file_tidy_app/app/app_router.dart';
 import 'package:file_tidy_app/app/dependency_container.dart';
 import 'package:file_tidy_app/core/models/connector_account_state.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
@@ -47,13 +48,35 @@ class _PrivacyCenterScreenState extends State<PrivacyCenterScreen> {
     final connectedLabel = connectedSources.map((item) => item.source.label).join(', ');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Privacy Center')),
+      appBar: AppBar(title: const Text('Settings')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: ListView(
                 children: [
+                  Text('Account', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: AppSpacing.sm),
+                  const Text('Plan: Free'),
+                  const SizedBox(height: AppSpacing.sm),
+                  AppButton.secondary(
+                    label: 'Manage subscription',
+                    onPressed: () => Navigator.of(context).pushNamed(AppRoutes.subscription),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  SizedBox(
+                    width: double.infinity,
+                    child: AppButton.primary(
+                      label: 'Logout',
+                      onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil(
+                        AppRoutes.signIn,
+                        (route) => false,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text('Preferences', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: AppSpacing.sm),
                   SwitchListTile(
                     value: _aiEnabled,
                     onChanged: (value) => setState(() => _aiEnabled = value),
@@ -67,22 +90,17 @@ class _PrivacyCenterScreenState extends State<PrivacyCenterScreen> {
                     subtitle: const Text('Off = manual mode only.'),
                   ),
                   const SizedBox(height: AppSpacing.md),
+                  Text('Sources', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     'Connected sources: ${connectedLabel.isEmpty ? 'None' : connectedLabel}',
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   const Text('Allowed folders: user selected only'),
-                  const SizedBox(height: AppSpacing.lg),
-                  const Text('Data sent for AI: minimal snippets only'),
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.sm),
                   AppButton.secondary(label: 'Manage folders', onPressed: () {}),
                   const SizedBox(height: AppSpacing.sm),
                   AppButton.secondary(label: 'Disconnect accounts', onPressed: () {}),
-                  const SizedBox(height: AppSpacing.sm),
-                  SizedBox(
-                    width: double.infinity,
-                    child: AppButton.primary(label: 'Delete my app data', onPressed: () {}),
-                  ),
                 ],
               ),
             ),

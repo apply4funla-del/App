@@ -740,70 +740,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _buildSplitExplorer(),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 420;
-              if (compact) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: AppButton.secondary(
-                        label: 'History',
-                        onPressed: () => Navigator.of(context).pushNamed(AppRoutes.history),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    SizedBox(
-                      width: double.infinity,
-                      child: AppButton.secondary(
-                        label: 'Privacy',
-                        onPressed: () => Navigator.of(context).pushNamed(AppRoutes.privacy),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    SizedBox(
-                      width: double.infinity,
-                      child: AppButton.primary(
-                        label: 'Settings',
-                        onPressed: () => Navigator.of(context).pushNamed(AppRoutes.settings),
-                      ),
-                    ),
-                  ],
-                );
-              }
-              return Row(
-                children: [
-                  Expanded(
-                    child: AppButton.secondary(
-                      label: 'History',
-                      onPressed: () => Navigator.of(context).pushNamed(AppRoutes.history),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Expanded(
-                    child: AppButton.secondary(
-                      label: 'Privacy',
-                      onPressed: () => Navigator.of(context).pushNamed(AppRoutes.privacy),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Expanded(
-                    child: AppButton.primary(
-                      label: 'Settings',
-                      onPressed: () => Navigator.of(context).pushNamed(AppRoutes.settings),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
+      bottomNavigationBar: _buildExplorerBottomBar(),
     );
   }
 
@@ -862,6 +799,15 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
     final rightPanel = Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.sm,
+          ),
+          child: _buildInlineRenameEditor(),
+        ),
         Expanded(
           child: PreviewPane(item: _previewItem),
         ),
@@ -1030,6 +976,91 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildExplorerBottomBar() {
+    final actions = _bottomBarActions();
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 640) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(child: _buildBottomNavButton(actions[0])),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(child: _buildBottomNavButton(actions[1])),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(child: _buildBottomNavButton(actions[2])),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Row(
+                    children: [
+                      Expanded(child: _buildBottomNavButton(actions[3])),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(child: _buildBottomNavButton(actions[4])),
+                    ],
+                  ),
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                for (var index = 0; index < actions.length; index++) ...[
+                  Expanded(child: _buildBottomNavButton(actions[index])),
+                  if (index < actions.length - 1) const SizedBox(width: AppSpacing.xs),
+                ],
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNavButton(
+    ({String label, VoidCallback onPressed, bool primary}) action,
+  ) {
+    if (action.primary) {
+      return AppButton.primary(label: action.label, onPressed: action.onPressed);
+    }
+    return AppButton.secondary(label: action.label, onPressed: action.onPressed);
+  }
+
+  List<({String label, VoidCallback onPressed, bool primary})> _bottomBarActions() {
+    return [
+      (
+        label: 'History',
+        onPressed: () => Navigator.of(context).pushNamed(AppRoutes.history),
+        primary: false,
+      ),
+      (
+        label: 'Settings',
+        onPressed: () => Navigator.of(context).pushNamed(AppRoutes.privacy),
+        primary: true,
+      ),
+      (
+        label: 'Privacy',
+        onPressed: () => Navigator.of(context).pushNamed(AppRoutes.settings),
+        primary: false,
+      ),
+      (
+        label: 'USB Archive',
+        onPressed: () => Navigator.of(context).pushNamed(AppRoutes.usbArchive),
+        primary: false,
+      ),
+      (
+        label: 'AI Assist',
+        onPressed: () => Navigator.of(context).pushNamed(AppRoutes.tidyUpSetup),
+        primary: false,
+      ),
+    ];
   }
 
   (String, String) _splitName(String fullName) {
