@@ -822,13 +822,13 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   PreferredSizeWidget? _buildRenameAppBarBottom() {
     return PreferredSize(
-      preferredSize: const Size.fromHeight(72),
+      preferredSize: const Size.fromHeight(84),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.md,
-          0,
+          AppSpacing.xs,
           AppSpacing.md,
-          AppSpacing.sm,
+          AppSpacing.xs,
         ),
         child: Row(
           children: [
