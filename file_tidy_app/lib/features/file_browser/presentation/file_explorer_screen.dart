@@ -54,7 +54,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   String? _renameTargetFileId;
   String _renameLockedExtension = '';
   bool _renameApplying = false;
-  bool _renameBarVisible = false;
+  bool _explorerToolbarVisible = false;
   _ExplorerSortType _sortType = _ExplorerSortType.name;
 
   List<FileItem> get _currentPhoneEntries {
@@ -246,7 +246,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     if (item == null || item.type == FileItemType.folder) {
       _renameTargetFileId = null;
       _renameLockedExtension = '';
-      _renameBarVisible = false;
       if (_renameBaseController.text.isNotEmpty) {
         _renameBaseController.clear();
       }
@@ -289,9 +288,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       if (!mounted) {
         return;
       }
-      setState(() {
-        _renameBarVisible = false;
-      });
       _syncInlineRenameDraft();
     } finally {
       _renameApplying = false;
@@ -647,6 +643,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: _explorerToolbarVisible ? kToolbarHeight : 0,
         title: const Text('Explorer'),
         bottom: _buildRenameAppBarBottom(),
         actions: [
@@ -662,21 +659,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               tooltip: 'Choose folder',
               onPressed: _importLocalFolder,
             ),
-          IconButton(
-            icon: Icon(
-              _renameBarVisible
-                  ? Icons.keyboard_arrow_up_rounded
-                  : Icons.drive_file_rename_outline,
-            ),
-            tooltip: _renameBarVisible ? 'Hide rename' : 'Rename selected file',
-            onPressed: _previewItem == null || _previewItem?.type == FileItemType.folder
-                ? null
-                : () {
-                    setState(() {
-                      _renameBarVisible = !_renameBarVisible;
-                    });
-                  },
-          ),
           PopupMenuButton<_ExplorerSortType>(
             tooltip: 'Sort',
             icon: const Icon(Icons.sort),
@@ -839,11 +821,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   }
 
   PreferredSizeWidget? _buildRenameAppBarBottom() {
-    final item = _previewItem;
-    if (!_renameBarVisible || item == null || item.type == FileItemType.folder) {
-      return null;
-    }
-
     return PreferredSize(
       preferredSize: const Size.fromHeight(72),
       child: Padding(
@@ -853,7 +830,29 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           AppSpacing.md,
           AppSpacing.sm,
         ),
-        child: _buildInlineRenameEditor(compact: true),
+        child: Row(
+          children: [
+            IconButton(
+              icon: Icon(
+                _explorerToolbarVisible
+                    ? Icons.visibility_off_outlined
+                    : Icons.tune_outlined,
+              ),
+              tooltip: _explorerToolbarVisible
+                  ? 'Hide explorer controls'
+                  : 'Show explorer controls',
+              onPressed: () {
+                setState(() {
+                  _explorerToolbarVisible = !_explorerToolbarVisible;
+                });
+              },
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: _buildInlineRenameEditor(compact: true),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -875,20 +874,14 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   Widget _buildInlineRenameEditor({bool compact = false}) {
     final item = _previewItem;
-    if (item == null || item.type == FileItemType.folder) {
-      return const SizedBox(
-        width: double.infinity,
-        child: Text('Select a file to rename.'),
-      );
-    }
-
-    final label = _operationMode == RenameOperationMode.workInPlace
-        ? 'Rename'
-        : 'Duplicate As';
-    final extensionLabel = _renameLockedExtension.isEmpty ? '' : '.$_renameLockedExtension';
+    final canRename = item != null && item.type != FileItemType.folder;
+    final label = _operationMode == RenameOperationMode.workInPlace ? 'Rename' : 'Duplicate As';
+    final extensionLabel =
+        canRename && _renameLockedExtension.isNotEmpty ? '.$_renameLockedExtension' : '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(label, style: Theme.of(context).textTheme.labelLarge),
         const SizedBox(height: AppSpacing.xs),
@@ -901,10 +894,10 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                 focusNode: _renameBaseFocusNode,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _commitInlineRename(),
-                enabled: !_renameApplying,
+                enabled: canRename && !_renameApplying,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(),
-                  hintText: 'Enter file name',
+                  hintText: canRename ? 'Enter file name' : 'Select a file to rename',
                   isDense: compact,
                   contentPadding: compact
                       ? const EdgeInsets.symmetric(
