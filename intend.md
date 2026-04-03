@@ -54,7 +54,7 @@ We are building a mobile-first file organization app that turns file cleanup fro
   - Both panels must be independently scrollable.
   - User taps a file name in left panel to open it on right panel.
   - Rename must be inline in Explorer (no modal sheet required).
-  - Rename field must sit at the top of the right panel, above the preview area.
+  - Rename field must sit in the top Explorer navigator area, above the split panels.
   - Rename input is a text box with locked file extension shown outside the box.
   - Extension cannot be edited by user.
   - Inline rename must work in both portrait and landscape modes.

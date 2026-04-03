@@ -666,6 +666,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Explorer'),
+        bottom: _buildRenameAppBarBottom(),
         actions: [
           if (FeatureFlags.enableUsbArchive)
             IconButton(
@@ -799,15 +800,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
     final rightPanel = Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.md,
-            AppSpacing.md,
-            AppSpacing.md,
-            AppSpacing.sm,
-          ),
-          child: _buildInlineRenameEditor(),
-        ),
         Expanded(
           child: PreviewPane(item: _previewItem),
         ),
@@ -816,7 +808,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final compact = constraints.maxWidth < 420;
-              final renameEditor = _buildInlineRenameEditor();
 
               if (compact) {
                 return Column(
@@ -829,8 +820,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                         onPressed: () => Navigator.of(context).pushNamed(AppRoutes.tidyUpSetup),
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    renameEditor,
                     if (_operationMode == RenameOperationMode.duplicate &&
                         _currentSource == FileSource.phone &&
                         _phoneCurrentPath != null) ...[
@@ -857,8 +846,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                       onPressed: () => Navigator.of(context).pushNamed(AppRoutes.tidyUpSetup),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  renameEditor,
                   if (_operationMode == RenameOperationMode.duplicate &&
                       _currentSource == FileSource.phone &&
                       _phoneCurrentPath != null) ...[
@@ -914,6 +901,26 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     );
   }
 
+  PreferredSizeWidget? _buildRenameAppBarBottom() {
+    final item = _previewItem;
+    if (item == null || item.type == FileItemType.folder) {
+      return null;
+    }
+
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(74),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          0,
+          AppSpacing.md,
+          AppSpacing.sm,
+        ),
+        child: _buildInlineRenameEditor(compact: true),
+      ),
+    );
+  }
+
   Widget _iconFor(FileItemType type) {
     switch (type) {
       case FileItemType.folder:
@@ -929,7 +936,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     }
   }
 
-  Widget _buildInlineRenameEditor() {
+  Widget _buildInlineRenameEditor({bool compact = false}) {
     final item = _previewItem;
     if (item == null || item.type == FileItemType.folder) {
       return const SizedBox(
@@ -958,10 +965,16 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _commitInlineRename(),
                 enabled: !_renameApplying,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   border: OutlineInputBorder(),
                   hintText: 'Enter file name',
-                  isDense: true,
+                  isDense: compact,
+                  contentPadding: compact
+                      ? const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: AppSpacing.sm,
+                        )
+                      : null,
                 ),
               ),
             ),
