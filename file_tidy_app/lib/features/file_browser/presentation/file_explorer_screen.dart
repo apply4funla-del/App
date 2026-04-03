@@ -9,7 +9,6 @@ import 'package:file_tidy_app/core/models/local_folder_import_result.dart';
 import 'package:file_tidy_app/core/models/rename_operation_mode.dart';
 import 'package:file_tidy_app/core/use_cases/duplicate_file_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/import_local_folder_use_case.dart';
-import 'package:file_tidy_app/core/use_cases/replace_originals_with_duplicates_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/rename_file_use_case.dart';
 import 'package:file_tidy_app/design_system/components/app_button.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
@@ -35,7 +34,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   late final RenameFileUseCase _renameFileUseCase;
   late final DuplicateFileUseCase _duplicateFileUseCase;
-  late final ReplaceOriginalsWithDuplicatesUseCase _replaceOriginalsWithDuplicatesUseCase;
   late final ImportLocalFolderUseCase _importLocalFolderUseCase;
 
   final TextEditingController _renameBaseController = TextEditingController();
@@ -70,9 +68,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     super.initState();
     _renameFileUseCase = RenameFileUseCase(_dependencies.fileRepository);
     _duplicateFileUseCase = DuplicateFileUseCase(_dependencies.fileRepository);
-    _replaceOriginalsWithDuplicatesUseCase = ReplaceOriginalsWithDuplicatesUseCase(
-      _dependencies.fileRepository,
-    );
     _importLocalFolderUseCase = ImportLocalFolderUseCase(
       _dependencies.localFilePickerService,
       _dependencies.fileRepository,
@@ -296,24 +291,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
     } finally {
       _renameApplying = false;
     }
-  }
-
-  Future<void> _replaceCurrentFolderOriginals() async {
-    if (_currentSource != FileSource.phone || _phoneCurrentPath == null) {
-      return;
-    }
-    final replaced = await _replaceOriginalsWithDuplicatesUseCase(
-      source: _currentSource,
-      parentPath: _phoneCurrentPath!,
-    );
-    await _loadItems();
-    if (!mounted) {
-      return;
-    }
-    final text = replaced == 0
-        ? 'No duplicate pairs found in this folder.'
-        : 'Replaced $replaced original file(s) with duplicates.';
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
   Future<void> _openItemInSplit(FileItem item) async {
@@ -802,66 +779,6 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       children: [
         Expanded(
           child: PreviewPane(item: _previewItem),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 420;
-
-              if (compact) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: AppButton.secondary(
-                        label: 'Tidy Up',
-                        onPressed: () => Navigator.of(context).pushNamed(AppRoutes.tidyUpSetup),
-                      ),
-                    ),
-                    if (_operationMode == RenameOperationMode.duplicate &&
-                        _currentSource == FileSource.phone &&
-                        _phoneCurrentPath != null) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      SizedBox(
-                        width: double.infinity,
-                        child: AppButton.secondary(
-                          label: 'Replace Originals In Folder',
-                          onPressed: _replaceCurrentFolderOriginals,
-                        ),
-                      ),
-                    ],
-                  ],
-                );
-              }
-
-                return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: AppButton.secondary(
-                      label: 'Tidy Up',
-                      onPressed: () => Navigator.of(context).pushNamed(AppRoutes.tidyUpSetup),
-                    ),
-                  ),
-                  if (_operationMode == RenameOperationMode.duplicate &&
-                      _currentSource == FileSource.phone &&
-                      _phoneCurrentPath != null) ...[
-                    const SizedBox(height: AppSpacing.sm),
-                    SizedBox(
-                      width: double.infinity,
-                      child: AppButton.secondary(
-                        label: 'Replace Originals In Folder',
-                        onPressed: _replaceCurrentFolderOriginals,
-                      ),
-                    ),
-                  ],
-                ],
-              );
-            },
-          ),
         ),
       ],
     );

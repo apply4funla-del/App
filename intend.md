@@ -50,7 +50,7 @@ We are building a mobile-first file organization app that turns file cleanup fro
 - Explorer layout requirement (non-negotiable):
   - Explorer must open in 2-panel view.
   - Left panel is folder + file tree structure only (high-level structure and file names).
-  - Right panel shows selected file details/content.
+  - Right panel shows selected file details/content only, with no action buttons inside the preview area.
   - Both panels must be independently scrollable.
   - User taps a file name in left panel to open it on right panel.
   - Rename must be inline in Explorer (no modal sheet required).
