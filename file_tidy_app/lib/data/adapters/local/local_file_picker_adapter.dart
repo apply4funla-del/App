@@ -9,6 +9,11 @@ class LocalFilePickerAdapter implements LocalFilePickerService {
   static const int _maxFolderImportCount = 5000;
 
   @override
+  Future<String?> pickDirectoryPath() {
+    return FilePicker.platform.getDirectoryPath();
+  }
+
+  @override
   Future<List<FileItem>> pickFiles() async {
     final result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
@@ -52,7 +57,7 @@ class LocalFilePickerAdapter implements LocalFilePickerService {
 
   @override
   Future<LocalFolderImportResult?> pickFolderItems() async {
-    final directoryPath = await FilePicker.platform.getDirectoryPath();
+    final directoryPath = await pickDirectoryPath();
     if (directoryPath == null) {
       return null;
     }

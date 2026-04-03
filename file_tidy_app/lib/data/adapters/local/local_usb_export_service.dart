@@ -2,52 +2,136 @@ import 'dart:io';
 
 import 'package:file_tidy_app/core/interfaces/usb_export_service.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
+import 'package:file_tidy_app/core/models/usb_archive_conflict.dart';
+import 'package:file_tidy_app/core/models/usb_archive_conflict_resolution.dart';
+import 'package:file_tidy_app/core/models/usb_archive_execution_result.dart';
 
 class LocalUsbExportService implements UsbExportService {
   @override
-  Future<int> exportFiles({
+  Future<List<UsbArchiveConflict>> detectConflicts({
     required List<FileItem> files,
     required String destinationFolderPath,
   }) async {
     final destination = Directory(destinationFolderPath);
     if (!destination.existsSync()) {
-      return 0;
+      return const [];
     }
 
-    var copied = 0;
+    final conflicts = <UsbArchiveConflict>[];
     for (final item in files) {
-      final path = item.path;
-      if (path == null) {
+      final sourcePath = item.path;
+      if (sourcePath == null) {
         continue;
       }
-      final source = File(path);
-      if (!source.existsSync()) {
+      final requested = File('$destinationFolderPath${Platform.pathSeparator}${item.name}');
+      if (!requested.existsSync()) {
         continue;
       }
-
-      final targetPath = _nextAvailablePath(
-        parentPath: destination.path,
-        fileName: item.name,
+      conflicts.add(
+        UsbArchiveConflict(
+          sourceName: item.name,
+          existingPath: requested.path,
+          suggestedName: _nextAvailableName(
+            parentPath: destinationFolderPath,
+            fileName: item.name,
+          ),
+        ),
       );
-      try {
-        await source.copy(targetPath);
-        copied += 1;
-      } catch (_) {
-        // Skip failed file and continue.
-      }
     }
-
-    return copied;
+    return conflicts;
   }
 
-  String _nextAvailablePath({
+  @override
+  Future<UsbArchiveExecutionResult> exportFiles({
+    required List<FileItem> files,
+    required String destinationFolderPath,
+    required UsbArchiveConflictResolution conflictResolution,
+  }) async {
+    final destination = Directory(destinationFolderPath);
+    if (!destination.existsSync()) {
+      return const UsbArchiveExecutionResult(fileResults: []);
+    }
+
+    final results = <UsbArchiveFileResult>[];
+    for (final item in files) {
+      final sourcePath = item.path;
+      if (sourcePath == null) {
+        continue;
+      }
+      final source = File(sourcePath);
+      if (!source.existsSync()) {
+        results.add(
+          UsbArchiveFileResult(
+            fileId: item.id,
+            fileName: item.name,
+            sourcePath: sourcePath,
+            destinationPath: '',
+            outcome: UsbArchiveFileOutcome.failed,
+            verified: false,
+          ),
+        );
+        continue;
+      }
+
+      final requestedPath = '$destinationFolderPath${Platform.pathSeparator}${item.name}';
+      final requestedTarget = File(requestedPath);
+
+      late final String targetPath;
+      late final UsbArchiveFileOutcome outcome;
+      if (requestedTarget.existsSync()) {
+        if (conflictResolution == UsbArchiveConflictResolution.replaceExisting) {
+          try {
+            await requestedTarget.delete();
+          } catch (_) {}
+          targetPath = requestedPath;
+          outcome = UsbArchiveFileOutcome.replacedExisting;
+        } else {
+          targetPath = '$destinationFolderPath${Platform.pathSeparator}${_nextAvailableName(parentPath: destinationFolderPath, fileName: item.name)}';
+          outcome = UsbArchiveFileOutcome.renamedCopy;
+        }
+      } else {
+        targetPath = requestedPath;
+        outcome = UsbArchiveFileOutcome.copied;
+      }
+
+      try {
+        final copiedFile = await source.copy(targetPath);
+        final verified = copiedFile.existsSync() && copiedFile.lengthSync() == source.lengthSync();
+        results.add(
+          UsbArchiveFileResult(
+            fileId: item.id,
+            fileName: copiedFile.uri.pathSegments.last,
+            sourcePath: sourcePath,
+            destinationPath: copiedFile.path,
+            outcome: outcome,
+            verified: verified,
+          ),
+        );
+      } catch (_) {
+        results.add(
+          UsbArchiveFileResult(
+            fileId: item.id,
+            fileName: item.name,
+            sourcePath: sourcePath,
+            destinationPath: targetPath,
+            outcome: UsbArchiveFileOutcome.failed,
+            verified: false,
+          ),
+        );
+      }
+    }
+
+    return UsbArchiveExecutionResult(fileResults: results);
+  }
+
+  String _nextAvailableName({
     required String parentPath,
     required String fileName,
   }) {
     final requested = '$parentPath${Platform.pathSeparator}$fileName';
     final requestedFile = File(requested);
     if (!requestedFile.existsSync()) {
-      return requested;
+      return fileName;
     }
 
     final dotIndex = fileName.lastIndexOf('.');
@@ -56,10 +140,10 @@ class LocalUsbExportService implements UsbExportService {
 
     var suffix = 1;
     while (true) {
-      final candidate =
-          '$parentPath${Platform.pathSeparator}${base}_copy$suffix$extension';
-      if (!File(candidate).existsSync()) {
-        return candidate;
+      final candidateName = '$base - $suffix$extension';
+      final candidatePath = '$parentPath${Platform.pathSeparator}$candidateName';
+      if (!File(candidatePath).existsSync()) {
+        return candidateName;
       }
       suffix += 1;
     }

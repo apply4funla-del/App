@@ -5,4 +5,6 @@ abstract class LocalFilePickerService {
   Future<List<FileItem>> pickFiles();
 
   Future<LocalFolderImportResult?> pickFolderItems();
+
+  Future<String?> pickDirectoryPath();
 }

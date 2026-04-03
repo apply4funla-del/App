@@ -1,6 +1,7 @@
 import 'package:file_tidy_app/core/interfaces/file_repository.dart';
 import 'package:file_tidy_app/core/interfaces/usb_export_service.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
+import 'package:file_tidy_app/core/models/usb_archive_conflict_resolution.dart';
 
 class ExportPhoneFilesToUsbUseCase {
   const ExportPhoneFilesToUsbUseCase(
@@ -19,9 +20,11 @@ class ExportPhoneFilesToUsbUseCase {
         .where((item) => item.type != FileItemType.folder && item.path != null)
         .toList();
 
-    return _usbExportService.exportFiles(
+    final result = await _usbExportService.exportFiles(
       files: files,
       destinationFolderPath: destinationFolderPath,
+      conflictResolution: UsbArchiveConflictResolution.keepBoth,
     );
+    return result.copiedCount;
   }
 }
