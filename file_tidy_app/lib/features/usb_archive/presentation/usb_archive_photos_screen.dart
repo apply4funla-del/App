@@ -121,104 +121,111 @@ class _UsbArchivePhotosScreenState extends State<UsbArchivePhotosScreen> {
           : _plan == null
               ? const SizedBox.shrink()
               : SafeArea(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 640),
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            ArchiveStepCard(
-                              title: 'Photo archive ready',
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Scrollbar(
+                        thumbVisibility: true,
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: 640,
+                                minHeight: constraints.maxHeight - (AppSpacing.md * 2),
+                              ),
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text('Source: ${_plan!.sourceRootPath}', maxLines: 2, overflow: TextOverflow.ellipsis),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  Text('USB folder: ${_plan!.destinationLabel}'),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  Text('Files found: ${_plan!.files.length}'),
+                                  ArchiveStepCard(
+                                    title: 'Photo archive ready',
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Source: ${_plan!.sourceRootPath}',
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: AppSpacing.xs),
+                                        Text('USB folder: ${_plan!.destinationLabel}'),
+                                        const SizedBox(height: AppSpacing.xs),
+                                        Text('Files found: ${_plan!.files.length}'),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  ArchiveStepCard(
+                                    title: 'After archive',
+                                    child: Column(
+                                      children: UsbArchiveRetentionMode.values
+                                          .map(
+                                            (mode) => ArchiveSelectionTile(
+                                              title: mode.label,
+                                              subtitle: mode.helperText,
+                                              selected: _retentionMode == mode,
+                                              onTap:
+                                                  _busy ? null : () => setState(() => _retentionMode = mode),
+                                            ),
+                                          )
+                                          .toList(),
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  ArchivePrimaryAction(
+                                    label: _busy ? 'Working...' : 'Archive now',
+                                    onPressed: _busy ? null : _prepareArchive,
+                                  ),
+                                  if (_conflicts.isNotEmpty || _result != null) ...[
+                                    const SizedBox(height: AppSpacing.md),
+                                    ArchiveStepCard(
+                                      title: 'Matching names on USB',
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _conflicts.isEmpty
+                                                ? 'No matching names found.'
+                                                : 'Choose how to handle ${_conflicts.length} matching name(s).',
+                                          ),
+                                          if (_conflicts.isNotEmpty) ...[
+                                            const SizedBox(height: AppSpacing.sm),
+                                            ...UsbArchiveConflictResolution.values.map(
+                                              (resolution) => ArchiveSelectionTile(
+                                                title: resolution.label,
+                                                subtitle: resolution.helperText,
+                                                selected: _conflictResolution == resolution,
+                                                onTap: _busy
+                                                    ? null
+                                                    : () => setState(() => _conflictResolution = resolution),
+                                              ),
+                                            ),
+                                            _ConflictList(conflicts: _conflicts),
+                                            const SizedBox(height: AppSpacing.sm),
+                                            ArchivePrimaryAction(
+                                              label: _busy ? 'Working...' : 'Start archive',
+                                              onPressed: _busy ? null : _runArchive,
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                  if (_result != null) ...[
+                                    const SizedBox(height: AppSpacing.md),
+                                    ArchiveResultCard(
+                                      result: _result!,
+                                      removedFromPhoneMode:
+                                          _retentionMode == UsbArchiveRetentionMode.removeFromPhone,
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
-                            const SizedBox(height: AppSpacing.md),
-                            ArchiveStepCard(
-                              title: 'After archive',
-                              child: Column(
-                                children: UsbArchiveRetentionMode.values
-                                    .map(
-                                      (mode) => ArchiveSelectionTile(
-                                        title: mode.label,
-                                        subtitle: mode.helperText,
-                                        selected: _retentionMode == mode,
-                                        onTap: _busy ? null : () => setState(() => _retentionMode = mode),
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            ArchivePrimaryAction(
-                              label: _busy ? 'Working...' : 'Archive now',
-                              onPressed: _busy ? null : _prepareArchive,
-                            ),
-                            if (_conflicts.isNotEmpty || _result != null) ...[
-                              const SizedBox(height: AppSpacing.md),
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      ArchiveStepCard(
-                                        title: 'Matching names on USB',
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              _conflicts.isEmpty
-                                                  ? 'No matching names found.'
-                                                  : 'Choose how to handle ${_conflicts.length} matching name(s).',
-                                            ),
-                                            if (_conflicts.isNotEmpty) ...[
-                                              const SizedBox(height: AppSpacing.sm),
-                                              ...UsbArchiveConflictResolution.values.map(
-                                                (resolution) => ArchiveSelectionTile(
-                                                  title: resolution.label,
-                                                  subtitle: resolution.helperText,
-                                                  selected: _conflictResolution == resolution,
-                                                  onTap: _busy
-                                                      ? null
-                                                      : () => setState(() => _conflictResolution = resolution),
-                                                ),
-                                              ),
-                                              _ConflictList(conflicts: _conflicts),
-                                              const SizedBox(height: AppSpacing.sm),
-                                              ArchivePrimaryAction(
-                                                label: _busy ? 'Working...' : 'Start archive',
-                                                onPressed: _busy ? null : _runArchive,
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      ),
-                                      if (_result != null) ...[
-                                        const SizedBox(height: AppSpacing.md),
-                                        ArchiveResultCard(
-                                          result: _result!,
-                                          removedFromPhoneMode:
-                                              _retentionMode == UsbArchiveRetentionMode.removeFromPhone,
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ),
     );
