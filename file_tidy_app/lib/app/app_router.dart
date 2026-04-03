@@ -14,7 +14,10 @@ import 'package:file_tidy_app/features/splash/presentation/splash_screen.dart';
 import 'package:file_tidy_app/features/subscription/presentation/subscription_screen.dart';
 import 'package:file_tidy_app/features/tidyup_non_ai/presentation/tidy_up_setup_screen.dart';
 import 'package:file_tidy_app/features/tidyup_non_ai/presentation/tidy_up_review_screen.dart';
-import 'package:file_tidy_app/features/usb_archive/presentation/usb_archive_screen.dart';
+import 'package:file_tidy_app/features/usb_archive/presentation/usb_archive_folder_screen.dart';
+import 'package:file_tidy_app/features/usb_archive/presentation/usb_archive_home_screen.dart';
+import 'package:file_tidy_app/features/usb_archive/presentation/usb_archive_missing_screen.dart';
+import 'package:file_tidy_app/features/usb_archive/presentation/usb_archive_photos_screen.dart';
 import 'package:flutter/material.dart';
 
 class AppRoutes {
@@ -32,6 +35,9 @@ class AppRoutes {
   static const String settings = '/settings';
   static const String subscription = '/subscription';
   static const String usbArchive = '/usb-archive';
+  static const String usbArchivePhotos = '/usb-archive/photos';
+  static const String usbArchiveFolder = '/usb-archive/folder';
+  static const String usbArchiveMissing = '/usb-archive/missing';
 }
 
 class AppRouter {
@@ -77,7 +83,13 @@ class AppRouter {
       case AppRoutes.subscription:
         return _material(const SubscriptionScreen());
       case AppRoutes.usbArchive:
-        return _material(const UsbArchiveScreen());
+        return _material(const UsbArchiveHomeScreen());
+      case AppRoutes.usbArchivePhotos:
+        return _material(const UsbArchivePhotosScreen());
+      case AppRoutes.usbArchiveFolder:
+        return _material(const UsbArchiveFolderScreen());
+      case AppRoutes.usbArchiveMissing:
+        return _material(const UsbArchiveMissingScreen());
       default:
         return _material(
           Scaffold(
