@@ -937,16 +937,14 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                       Expanded(child: _buildBottomNavButton(actions[0])),
                       const SizedBox(width: AppSpacing.xs),
                       Expanded(child: _buildBottomNavButton(actions[1])),
-                      const SizedBox(width: AppSpacing.xs),
-                      Expanded(child: _buildBottomNavButton(actions[2])),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Row(
                     children: [
-                      Expanded(child: _buildBottomNavButton(actions[3])),
+                      Expanded(child: _buildBottomNavButton(actions[2])),
                       const SizedBox(width: AppSpacing.xs),
-                      Expanded(child: _buildBottomNavButton(actions[4])),
+                      Expanded(child: _buildBottomNavButton(actions[3])),
                     ],
                   ),
                 ],
@@ -979,6 +977,14 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   List<({String label, VoidCallback onPressed, bool primary})> _bottomBarActions() {
     return [
       (
+        label: 'Home',
+        onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil(
+          AppRoutes.welcome,
+          (route) => false,
+        ),
+        primary: false,
+      ),
+      (
         label: 'History',
         onPressed: () => Navigator.of(context).pushNamed(AppRoutes.history),
         primary: false,
@@ -989,18 +995,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         primary: true,
       ),
       (
-        label: 'Privacy',
-        onPressed: () => Navigator.of(context).pushNamed(AppRoutes.settings),
-        primary: false,
-      ),
-      (
         label: 'USB Archive',
         onPressed: () => Navigator.of(context).pushNamed(AppRoutes.usbArchive),
-        primary: false,
-      ),
-      (
-        label: 'AI Assist',
-        onPressed: () => Navigator.of(context).pushNamed(AppRoutes.tidyUpSetup),
         primary: false,
       ),
     ];

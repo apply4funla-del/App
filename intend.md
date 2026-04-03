@@ -40,9 +40,16 @@ We are building a mobile-first file organization app that turns file cleanup fro
   - Get Started
   - Sign In
   - Connect Source (user must tap/select one source: Phone, Google Drive, or Dropbox)
-  - Method (Amend In Root Folder or Clone And Work)
+  - Method (Tidy Files or Archive Memories)
+  - Tidy Files method detail (Amend In Root Folder or Clone And Work)
   - Permission screen (required when Amend In Root Folder is chosen)
   - Explorer
+- Onboarding layout requirements:
+  - In landscape and wider desktop layouts, primary onboarding buttons like Get Started and Continue must not span the full width of the screen.
+  - Keep onboarding actions constrained to a readable width while preserving full-width behavior on narrow phone layouts.
+- Connect Source layout requirements:
+  - Portrait layout can remain stacked.
+  - In landscape/wide layouts, Phone, Google Drive, and Dropbox must appear as three horizontal square-style option boxes.
 - Permission handoff requirement:
   - After user grants folder permission, app must open Explorer immediately.
   - Do not block user behind generic "can't use this folder" style app messages.
@@ -60,8 +67,8 @@ We are building a mobile-first file organization app that turns file cleanup fro
   - Rename input is a text box with locked file extension shown outside the box.
   - Extension cannot be edited by user.
   - Inline rename must work in both portrait and landscape modes.
-  - Explorer bottom bar must expose five actions: History, Settings, Privacy, USB Archive, and AI Assist.
-  - Settings must contain subscription management and logout.
+  - Explorer bottom bar must expose four actions: Home, History, Settings, and USB Archive.
+  - Settings must contain subscription management, logout, privacy explanations, and AI assist controls.
 
 ## Locked Explorer layout summary (2026-04-03)
 - The current Explorer structure is approved and should be treated as the working baseline.

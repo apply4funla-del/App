@@ -6,6 +6,7 @@ import 'package:file_tidy_app/features/connectors/presentation/connector_picker_
 import 'package:file_tidy_app/features/file_browser/presentation/file_explorer_screen.dart';
 import 'package:file_tidy_app/features/history_undo/presentation/history_screen.dart';
 import 'package:file_tidy_app/features/method/presentation/method_screen.dart';
+import 'package:file_tidy_app/features/method/presentation/tidy_method_screen.dart';
 import 'package:file_tidy_app/features/onboarding/presentation/welcome_screen.dart';
 import 'package:file_tidy_app/features/permissions/presentation/folder_permission_screen.dart';
 import 'package:file_tidy_app/features/privacy_center/presentation/privacy_center_screen.dart';
@@ -26,6 +27,7 @@ class AppRoutes {
   static const String signIn = '/sign-in';
   static const String connectorPicker = '/connectors';
   static const String method = '/method';
+  static const String tidyMethod = '/tidy-method';
   static const String folderPermission = '/folder-permission';
   static const String explorer = '/explorer';
   static const String tidyUpSetup = '/tidy-up-setup';
@@ -54,6 +56,9 @@ class AppRouter {
       case AppRoutes.method:
         final source = settings.arguments is FileSource ? settings.arguments as FileSource : FileSource.phone;
         return _material(MethodScreen(source: source));
+      case AppRoutes.tidyMethod:
+        final source = settings.arguments is FileSource ? settings.arguments as FileSource : FileSource.phone;
+        return _material(TidyMethodScreen(source: source));
       case AppRoutes.folderPermission:
         final config = settings.arguments is ExplorerLaunchConfig
             ? settings.arguments as ExplorerLaunchConfig

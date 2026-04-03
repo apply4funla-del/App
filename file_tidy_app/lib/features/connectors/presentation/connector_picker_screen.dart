@@ -137,32 +137,63 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final landscapeGrid = MediaQuery.sizeOf(context).width >= 900;
     return Scaffold(
       appBar: AppBar(title: const Text('Connect sources')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: ListView(
-                children: [
-                  const Text('Tap one source to continue.'),
-                  const SizedBox(height: AppSpacing.md),
-                  ...FileSource.values.map((source) => _buildConnectorCard(source)),
-                  const SizedBox(height: AppSpacing.md),
-                  SizedBox(
-                    width: double.infinity,
-                    child: AppButton.primary(
-                      label: 'Next: Method',
-                      onPressed: _selectedSource == null ? null : _goToMethod,
-                    ),
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1080),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: ListView(
+                    children: [
+                      const Text('Tap one source to continue.'),
+                      const SizedBox(height: AppSpacing.md),
+                      if (landscapeGrid)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (var index = 0; index < FileSource.values.length; index++) ...[
+                              Expanded(
+                                child: _buildConnectorCard(
+                                  FileSource.values[index],
+                                  compact: true,
+                                ),
+                              ),
+                              if (index < FileSource.values.length - 1)
+                                const SizedBox(width: AppSpacing.md),
+                            ],
+                          ],
+                        )
+                      else
+                        ...FileSource.values.map(
+                          (source) => Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                            child: _buildConnectorCard(source),
+                          ),
+                        ),
+                      const SizedBox(height: AppSpacing.md),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: SizedBox(
+                          width: landscapeGrid ? 260 : double.infinity,
+                          child: AppButton.primary(
+                            label: 'Next: Method',
+                            onPressed: _selectedSource == null ? null : _goToMethod,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
     );
   }
 
-  Widget _buildConnectorCard(FileSource source) {
+  Widget _buildConnectorCard(FileSource source, {bool compact = false}) {
     final state = _states[source];
     final connected = state?.connected ?? (source == FileSource.phone);
     final label = state?.accountLabel;
@@ -186,34 +217,44 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
         onTap: () => setState(() => _selectedSource = source),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(_iconFor(source)),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(source.label, style: Theme.of(context).textTheme.titleMedium),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          connected ? 'Connected${label == null ? '' : ' as $label'}' : 'Not connected',
-                        ),
-                      ],
+          child: SizedBox(
+            height: compact ? 220 : null,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(_iconFor(source)),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(source.label, style: Theme.of(context).textTheme.titleMedium),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            connected ? 'Connected${label == null ? '' : ' as $label'}' : 'Not connected',
+                          ),
+                        ],
+                      ),
                     ),
+                    if (selected) const Icon(Icons.check_circle_outline),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                if (compact)
+                  Text(
+                    source == FileSource.phone
+                        ? 'Use files already on this device.'
+                        : 'Connect this cloud source before continuing.',
                   ),
-                  if (selected) const Icon(Icons.check_circle_outline),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Align(
-                alignment: Alignment.centerRight,
-                child: action,
-              ),
-            ],
+                if (compact) const Spacer() else const SizedBox(height: AppSpacing.sm),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: action,
+                ),
+              ],
+            ),
           ),
         ),
       ),
