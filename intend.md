@@ -52,6 +52,9 @@ We are building a mobile-first file organization app that turns file cleanup fro
   - The auth choice screen must separate "Use for free" from account creation.
   - The auth form screen must remain a separate step from the auth choice screen.
   - Connect and Method screens must visually follow the same rounded, friendly, image-led style rather than default Material cards.
+  - All onboarding and setup screens must be vertically scrollable so they remain usable on smaller phones.
+  - Primary content should be arranged to fit a normal phone baseline around 360x800 logical pixels without forcing scroll in common cases.
+  - On larger screens, artwork and spacing may scale up, but buttons and form controls must stay within readable widths rather than stretching edge to edge.
 - Sign-in requirements:
   - Sign in must be optional. Users can continue in free mode without sign-in.
   - Sign in must clearly explain: sign in is for Google Drive, Dropbox, and plan restore.

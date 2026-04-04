@@ -22,19 +22,28 @@ class OnboardingScreen extends StatelessWidget {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final horizontalPadding = width >= 720 ? AppSpacing.lg : AppSpacing.md;
+            final verticalPadding = width >= 720 ? AppSpacing.md : AppSpacing.sm;
+            final topBarHeight = width >= 720 ? 64.0 : 56.0;
+            final titleStyle =
+                width >= 420 ? Theme.of(context).textTheme.headlineMedium : Theme.of(context).textTheme.titleLarge;
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalPadding,
               ),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: maxWidth),
+                  constraints: BoxConstraints(
+                    maxWidth: maxWidth,
+                    minHeight: constraints.maxHeight - (verticalPadding * 2),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       SizedBox(
-                        height: 56,
+                        height: topBarHeight,
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
@@ -46,7 +55,7 @@ class OnboardingScreen extends StatelessWidget {
                                   onTap: onBack,
                                   child: Image.asset(
                                     AppAssets.backButton,
-                                    width: 46,
+                                    width: width >= 420 ? 46 : 40,
                                     fit: BoxFit.contain,
                                   ),
                                 ),
@@ -56,7 +65,7 @@ class OnboardingScreen extends StatelessWidget {
                                 child: Text(
                                   title!,
                                   textAlign: TextAlign.center,
-                                  style: Theme.of(context).textTheme.headlineMedium,
+                                  style: titleStyle,
                                 ),
                               ),
                           ],

@@ -10,7 +10,11 @@ class AuthEntryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final wide = MediaQuery.sizeOf(context).width >= 720;
+    final size = MediaQuery.sizeOf(context);
+    final width = size.width;
+    final wide = width >= 720;
+    final compact = width < 380;
+    final buttonWidth = wide ? 360.0 : width.clamp(220.0, 360.0);
     final logoSize = wide ? 72.0 : 64.0;
 
     return OnboardingScreen(
@@ -20,12 +24,12 @@ class AuthEntryScreen extends StatelessWidget {
           if (wide) const SizedBox(height: AppSpacing.sm),
           Image.asset(
             AppAssets.logoWordmark,
-            width: wide ? 240 : 210,
+            width: wide ? 240 : width.clamp(180.0, 230.0),
             fit: BoxFit.contain,
           ),
           const SizedBox(height: AppSpacing.lg),
           ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: wide ? 360 : 420),
+            constraints: BoxConstraints(maxWidth: buttonWidth),
             child: Column(
               children: [
                 OnboardingAssetButton(
@@ -55,17 +59,17 @@ class AuthEntryScreen extends StatelessWidget {
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: AppSpacing.md),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: compact ? AppSpacing.sm : AppSpacing.md,
+            runSpacing: AppSpacing.sm,
             children: [
               _LogoBubble(assetPath: AppAssets.dropboxLogo, size: logoSize),
-              const SizedBox(width: AppSpacing.md),
               _LogoBubble(assetPath: AppAssets.googleDriveLogo, size: logoSize),
-              const SizedBox(width: AppSpacing.md),
               _LogoBubble(assetPath: AppAssets.phoneLogo, size: logoSize),
             ],
           ),
-          const SizedBox(height: AppSpacing.xl),
+          SizedBox(height: compact ? AppSpacing.lg : AppSpacing.xl),
           Text(
             'You agree to the Tidily Privacy Policy when creating an account.',
             textAlign: TextAlign.center,

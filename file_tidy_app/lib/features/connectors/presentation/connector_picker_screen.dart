@@ -116,7 +116,9 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final landscapeGrid = MediaQuery.sizeOf(context).width >= 900;
+    final width = MediaQuery.sizeOf(context).width;
+    final landscapeGrid = width >= 900;
+    final buttonWidth = landscapeGrid ? 260.0 : width.clamp(220.0, 320.0);
     return OnboardingScreen(
       title: 'Connect',
       onBack: () => Navigator.of(context).pushNamedAndRemoveUntil(
@@ -161,7 +163,7 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
                   ),
                 const SizedBox(height: AppSpacing.lg),
                 SizedBox(
-                  width: landscapeGrid ? 260 : 320,
+                  width: buttonWidth,
                   child: OnboardingPillButton(
                     label: 'Next',
                     onPressed: _selectedSource == null ? null : _goToMethod,
@@ -242,7 +244,12 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(source.label, style: Theme.of(context).textTheme.titleLarge),
+                          Text(
+                            source.label,
+                            style: compact
+                                ? Theme.of(context).textTheme.titleMedium
+                                : Theme.of(context).textTheme.titleLarge,
+                          ),
                           const SizedBox(height: AppSpacing.xs),
                           Text(
                             connected ? 'Connected${label == null ? '' : ' as $label'}' : 'Not connected',
@@ -266,7 +273,7 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: SizedBox(
-                    width: compact ? 138 : 160,
+                    width: compact ? 132 : 160,
                     child: action,
                   ),
                 ),

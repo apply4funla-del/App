@@ -115,7 +115,10 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final wide = MediaQuery.sizeOf(context).width >= 720;
+    final width = MediaQuery.sizeOf(context).width;
+    final wide = width >= 720;
+    final compact = width < 390;
+    final buttonWidth = wide ? 360.0 : width.clamp(220.0, 360.0);
     return OnboardingScreen(
       title: _hasAccount ? 'Sign in' : 'Create\nAccount',
       onBack: () => Navigator.of(context).maybePop(),
@@ -139,6 +142,7 @@ class _SignInScreenState extends State<SignInScreen> {
           _ModeToggle(
             hasAccount: _hasAccount,
             onChanged: (value) => setState(() => _hasAccount = value),
+            stacked: compact,
           ),
           const SizedBox(height: AppSpacing.lg),
           AppTextInput(
@@ -164,7 +168,7 @@ class _SignInScreenState extends State<SignInScreen> {
           ],
           const SizedBox(height: AppSpacing.xl),
           ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: wide ? 360 : 420),
+            constraints: BoxConstraints(maxWidth: buttonWidth),
             child: OnboardingAssetButton(
               assetPath: _hasAccount ? AppAssets.signInButton : AppAssets.signUpButton,
               semanticLabel: _hasAccount ? 'Sign in' : 'Create account',
@@ -174,7 +178,7 @@ class _SignInScreenState extends State<SignInScreen> {
           if (_hasAccount) ...[
             const SizedBox(height: AppSpacing.md),
             ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: wide ? 360 : 420),
+              constraints: BoxConstraints(maxWidth: buttonWidth),
               child: OnboardingAssetButton(
                 assetPath: AppAssets.passwordHelpButton,
                 semanticLabel: 'I need my password',
@@ -206,10 +210,12 @@ class _ModeToggle extends StatelessWidget {
   const _ModeToggle({
     required this.hasAccount,
     required this.onChanged,
+    required this.stacked,
   });
 
   final bool hasAccount;
   final ValueChanged<bool> onChanged;
+  final bool stacked;
 
   @override
   Widget build(BuildContext context) {
@@ -220,25 +226,41 @@ class _ModeToggle extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _ModeChip(
-              label: 'I have an account',
-              selected: hasAccount,
-              onTap: () => onChanged(true),
+      child: stacked
+          ? Column(
+              children: [
+                _ModeChip(
+                  label: 'I have an account',
+                  selected: hasAccount,
+                  onTap: () => onChanged(true),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                _ModeChip(
+                  label: 'Create account',
+                  selected: !hasAccount,
+                  onTap: () => onChanged(false),
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                Expanded(
+                  child: _ModeChip(
+                    label: 'I have an account',
+                    selected: hasAccount,
+                    onTap: () => onChanged(true),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: _ModeChip(
+                    label: 'Create account',
+                    selected: !hasAccount,
+                    onTap: () => onChanged(false),
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Expanded(
-            child: _ModeChip(
-              label: 'Create account',
-              selected: !hasAccount,
-              onTap: () => onChanged(false),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

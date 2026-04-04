@@ -50,7 +50,9 @@ class _MethodScreenState extends State<MethodScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final wide = MediaQuery.sizeOf(context).width >= 720;
+    final width = MediaQuery.sizeOf(context).width;
+    final wide = width >= 720;
+    final buttonWidth = wide ? 260.0 : width.clamp(220.0, 320.0);
     return OnboardingScreen(
       title: 'Method',
       onBack: () => Navigator.of(context).maybePop(),
@@ -74,7 +76,7 @@ class _MethodScreenState extends State<MethodScreen> {
           ),
           const SizedBox(height: AppSpacing.xl),
           SizedBox(
-            width: wide ? 260 : 320,
+            width: buttonWidth,
             child: OnboardingPillButton(
               label: 'Next',
               onPressed: _selectedAction == null ? null : _continue,
@@ -105,6 +107,7 @@ class _MethodScreenState extends State<MethodScreen> {
         child: Image.asset(
           assetPath,
           fit: BoxFit.contain,
+          width: double.infinity,
         ),
       ),
     );
