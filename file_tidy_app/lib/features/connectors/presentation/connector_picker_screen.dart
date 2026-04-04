@@ -4,11 +4,13 @@ import 'package:file_tidy_app/core/models/app_user_session.dart';
 import 'package:file_tidy_app/core/models/connector_account_state.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/use_cases/connect_connector_use_case.dart';
-import 'package:file_tidy_app/core/use_cases/get_current_user_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/disconnect_connector_use_case.dart';
+import 'package:file_tidy_app/core/use_cases/get_current_user_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/list_connector_states_use_case.dart';
-import 'package:file_tidy_app/design_system/components/app_button.dart';
-import 'package:file_tidy_app/design_system/components/app_text_input.dart';
+import 'package:file_tidy_app/design_system/components/onboarding_pill_button.dart';
+import 'package:file_tidy_app/design_system/components/onboarding_screen.dart';
+import 'package:file_tidy_app/design_system/tokens/app_assets.dart';
+import 'package:file_tidy_app/design_system/tokens/app_colors.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
 import 'package:flutter/material.dart';
 
@@ -90,47 +92,7 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
   }
 
   Future<String?> _showAccountLabelPrompt(FileSource source) async {
-    final controller = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Connect ${source.label}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Enter account label (email or nickname). OAuth provider wiring is modular and can be swapped in next.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              AppTextInput(
-                controller: controller,
-                label: 'Account label',
-                hintText: 'you@example.com',
-              ),
-            ],
-          ),
-          actions: [
-            SizedBox(
-              width: 100,
-              child: AppButton.secondary(
-                label: 'Cancel',
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
-            SizedBox(
-              width: 100,
-              child: AppButton.primary(
-                label: 'Connect',
-                onPressed: () => Navigator.of(context).pop(controller.text),
-              ),
-            ),
-          ],
-        );
-      },
-    );
+    return '${source.label.toLowerCase()}@connected';
   }
 
   void _goToMethod() {
@@ -155,63 +117,54 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final landscapeGrid = MediaQuery.sizeOf(context).width >= 900;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Connect sources')),
-      body: _loading
+    return OnboardingScreen(
+      title: 'Connect',
+      onBack: () => Navigator.of(context).maybePop(),
+      maxWidth: 1080,
+      child: _loading
           ? const Center(child: CircularProgressIndicator())
-          : Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1080),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: ListView(
+          : Column(
+              children: [
+                Text(
+                  _currentUser == null
+                      ? 'Choose one source. Sign in only if you want Google Drive or Dropbox.'
+                      : 'Signed in as ${_currentUser!.email}',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                if (landscapeGrid)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        _currentUser == null
-                            ? 'Using free mode. Sign in to access Google Drive and Dropbox.'
-                            : 'Signed in as ${_currentUser!.email}',
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      const Text('Tap one source to continue.'),
-                      const SizedBox(height: AppSpacing.md),
-                      if (landscapeGrid)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            for (var index = 0; index < FileSource.values.length; index++) ...[
-                              Expanded(
-                                child: _buildConnectorCard(
-                                  FileSource.values[index],
-                                  compact: true,
-                                ),
-                              ),
-                              if (index < FileSource.values.length - 1)
-                                const SizedBox(width: AppSpacing.md),
-                            ],
-                          ],
-                        )
-                      else
-                        ...FileSource.values.map(
-                          (source) => Padding(
-                            padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                            child: _buildConnectorCard(source),
+                      for (var index = 0; index < FileSource.values.length; index++) ...[
+                        Expanded(
+                          child: _buildConnectorCard(
+                            FileSource.values[index],
+                            compact: true,
                           ),
                         ),
-                      const SizedBox(height: AppSpacing.md),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: SizedBox(
-                          width: landscapeGrid ? 260 : double.infinity,
-                          child: AppButton.primary(
-                            label: 'Next: Method',
-                            onPressed: _selectedSource == null ? null : _goToMethod,
-                          ),
-                        ),
-                      ),
+                        if (index < FileSource.values.length - 1)
+                          const SizedBox(width: AppSpacing.md),
+                      ],
                     ],
+                  )
+                else
+                  ...FileSource.values.map(
+                    (source) => Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      child: _buildConnectorCard(source),
+                    ),
+                  ),
+                const SizedBox(height: AppSpacing.lg),
+                SizedBox(
+                  width: landscapeGrid ? 260 : 320,
+                  child: OnboardingPillButton(
+                    label: 'Next',
+                    onPressed: _selectedSource == null ? null : _goToMethod,
                   ),
                 ),
-              ),
+              ],
             ),
     );
   }
@@ -225,25 +178,45 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
     final cloudRequiresSignIn = source != FileSource.phone && _currentUser == null;
 
     final action = source == FileSource.phone
-        ? const Text('Always On')
+        ? Text(
+            'Connected',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: AppColors.brandDark,
+                ),
+          )
         : cloudRequiresSignIn
-            ? AppButton.secondary(
-                label: 'Sign In',
+            ? OnboardingPillButton(
+                label: 'Sign in',
+                compact: true,
+                tone: OnboardingPillTone.green,
                 onPressed: () => Navigator.of(context).pushNamed(AppRoutes.signIn),
               )
         : connected
-            ? AppButton.secondary(
+            ? OnboardingPillButton(
                 label: 'Disconnect',
+                compact: true,
+                tone: OnboardingPillTone.white,
                 onPressed: () => _disconnect(source),
               )
-            : AppButton.primary(
+            : OnboardingPillButton(
                 label: 'Connect',
+                compact: true,
+                tone: OnboardingPillTone.green,
                 onPressed: () => _connect(source),
               );
 
-    return Card(
-      color: selected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08) : null,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: selected ? AppColors.brandDark : AppColors.border,
+          width: selected ? 2 : 1,
+        ),
+      ),
       child: InkWell(
+        borderRadius: BorderRadius.circular(28),
         onTap: () => setState(() => _selectedSource = source),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
@@ -253,37 +226,46 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(_iconFor(source)),
+                    Image.asset(
+                      _imageFor(source),
+                      width: compact ? 62 : 56,
+                      height: compact ? 62 : 56,
+                      fit: BoxFit.contain,
+                    ),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(source.label, style: Theme.of(context).textTheme.titleMedium),
+                          Text(source.label, style: Theme.of(context).textTheme.titleLarge),
                           const SizedBox(height: AppSpacing.xs),
                           Text(
                             connected ? 'Connected${label == null ? '' : ' as $label'}' : 'Not connected',
+                            style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ],
                       ),
                     ),
-                    if (selected) const Icon(Icons.check_circle_outline),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                if (compact)
-                  Text(
-                    source == FileSource.phone
-                        ? 'Use files already on this device.'
-                        : cloudRequiresSignIn
-                            ? 'Sign in to enable this cloud source.'
-                        : 'Connect this cloud source before continuing.',
-                  ),
-                if (compact) const Spacer() else const SizedBox(height: AppSpacing.sm),
+                Text(
+                  source == FileSource.phone
+                      ? 'Use files already on this device.'
+                      : cloudRequiresSignIn
+                          ? 'Sign in to enable this cloud source.'
+                          : 'Connect this cloud source before continuing.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                if (compact) const Spacer() else const SizedBox(height: AppSpacing.md),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: action,
+                  child: SizedBox(
+                    width: compact ? 138 : 160,
+                    child: action,
+                  ),
                 ),
               ],
             ),
@@ -293,14 +275,14 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
     );
   }
 
-  IconData _iconFor(FileSource source) {
+  String _imageFor(FileSource source) {
     switch (source) {
       case FileSource.phone:
-        return Icons.smartphone_outlined;
+        return AppAssets.phoneLogo;
       case FileSource.googleDrive:
-        return Icons.cloud_outlined;
+        return AppAssets.googleDriveLogo;
       case FileSource.dropbox:
-        return Icons.inventory_2_outlined;
+        return AppAssets.dropboxLogo;
     }
   }
 }

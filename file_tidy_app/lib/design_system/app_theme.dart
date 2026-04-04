@@ -17,7 +17,7 @@ class AppTheme {
       textTheme: AppTypography.theme(),
       appBarTheme: const AppBarTheme(
         centerTitle: false,
-        backgroundColor: AppColors.bg,
+        backgroundColor: AppColors.surface,
         foregroundColor: AppColors.ink,
         elevation: 0,
       ),
@@ -32,15 +32,15 @@ class AppTheme {
         filled: true,
         fillColor: AppColors.surface,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadii.sm),
+          borderRadius: BorderRadius.circular(AppRadii.md),
           borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadii.sm),
+          borderRadius: BorderRadius.circular(AppRadii.md),
           borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadii.sm),
+          borderRadius: BorderRadius.circular(AppRadii.md),
           borderSide: const BorderSide(color: AppColors.brand, width: 1.4),
         ),
       ),

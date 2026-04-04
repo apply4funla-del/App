@@ -2,7 +2,10 @@ import 'package:file_tidy_app/app/app_router.dart';
 import 'package:file_tidy_app/app/dependency_container.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/use_cases/get_subscription_status_use_case.dart';
-import 'package:file_tidy_app/design_system/components/app_button.dart';
+import 'package:file_tidy_app/design_system/components/onboarding_pill_button.dart';
+import 'package:file_tidy_app/design_system/components/onboarding_screen.dart';
+import 'package:file_tidy_app/design_system/tokens/app_assets.dart';
+import 'package:file_tidy_app/design_system/tokens/app_colors.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
 import 'package:flutter/material.dart';
 
@@ -47,32 +50,35 @@ class _MethodScreenState extends State<MethodScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Method')),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
+    final wide = MediaQuery.sizeOf(context).width >= 720;
+    return OnboardingScreen(
+      title: 'Method',
+      onBack: () => Navigator.of(context).maybePop(),
+      maxWidth: 760,
+      child: Column(
         children: [
-          Text('Source: ${widget.source.label}'),
-          const SizedBox(height: AppSpacing.sm),
-          const Text('Choose what you want to do:'),
+          Text(
+            'Choose what you want to do next.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _methodTile(
+            id: 'archive',
+            assetPath: AppAssets.archiveOptionCard,
+          ),
           const SizedBox(height: AppSpacing.md),
           _methodTile(
             id: 'tidy',
-            title: 'Tidy Files',
-            subtitle: 'Browse, preview, and rename files.',
-            icon: Icons.edit_note_outlined,
+            assetPath: AppAssets.manageFileOptionCard,
           ),
-          const SizedBox(height: AppSpacing.sm),
-          _methodTile(
-            id: 'archive',
-            title: 'Archive Memories',
-            subtitle: 'Copy photos or folders to your USB memory stick.',
-            icon: Icons.usb_outlined,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          AppButton.primary(
-            label: 'Continue',
-            onPressed: _selectedAction == null ? null : _continue,
+          const SizedBox(height: AppSpacing.xl),
+          SizedBox(
+            width: wide ? 260 : 320,
+            child: OnboardingPillButton(
+              label: 'Next',
+              onPressed: _selectedAction == null ? null : _continue,
+            ),
           ),
         ],
       ),
@@ -81,18 +87,25 @@ class _MethodScreenState extends State<MethodScreen> {
 
   Widget _methodTile({
     required String id,
-    required String title,
-    required String subtitle,
-    required IconData icon,
+    required String assetPath,
   }) {
     final selected = _selectedAction == id;
-    return Card(
-      child: ListTile(
-        selected: selected,
-        leading: Icon(selected ? Icons.check_circle : icon),
-        title: Text(title),
-        subtitle: Text(subtitle),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+          color: selected ? AppColors.brandDark : Colors.transparent,
+          width: 3,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(32),
         onTap: () => setState(() => _selectedAction = id),
+        child: Image.asset(
+          assetPath,
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }

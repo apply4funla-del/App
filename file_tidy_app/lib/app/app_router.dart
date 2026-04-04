@@ -1,6 +1,7 @@
 import 'package:file_tidy_app/core/models/explorer_launch_config.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/models/rename_operation_mode.dart';
+import 'package:file_tidy_app/features/auth/presentation/auth_entry_screen.dart';
 import 'package:file_tidy_app/features/auth/presentation/sign_in_screen.dart';
 import 'package:file_tidy_app/features/connectors/presentation/connector_picker_screen.dart';
 import 'package:file_tidy_app/features/file_browser/presentation/file_explorer_screen.dart';
@@ -25,6 +26,7 @@ class AppRoutes {
   static const String splash = '/';
   static const String welcome = '/welcome';
   static const String signIn = '/sign-in';
+  static const String signUp = '/sign-up';
   static const String connectorPicker = '/connectors';
   static const String method = '/method';
   static const String tidyMethod = '/tidy-method';
@@ -50,7 +52,10 @@ class AppRouter {
       case AppRoutes.welcome:
         return _material(const WelcomeScreen());
       case AppRoutes.signIn:
-        return _material(const SignInScreen());
+        final initialCreateAccount = settings.arguments is bool ? settings.arguments as bool : false;
+        return _material(SignInScreen(initialCreateAccount: initialCreateAccount));
+      case AppRoutes.signUp:
+        return _material(const AuthEntryScreen());
       case AppRoutes.connectorPicker:
         return _material(const ConnectorPickerScreen());
       case AppRoutes.method:

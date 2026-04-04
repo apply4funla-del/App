@@ -15,6 +15,6 @@ void main() {
     expect(find.text('File Tidy Assistant'), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 901));
     await tester.pumpAndSettle();
-    expect(find.text('Clean file names fast'), findsOneWidget);
+    expect(find.text('Sort out your files. Keep your memories close.'), findsOneWidget);
   });
 }
