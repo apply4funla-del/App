@@ -26,49 +26,48 @@ class ExplorerOrientationHint extends StatelessWidget {
           AppSpacing.md,
           0,
         ),
-        padding: const EdgeInsets.all(AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: colorScheme.primary.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: colorScheme.primary.withValues(alpha: 0.28),
           ),
         ),
-        child: Row(
+        child: Stack(
           children: [
-            SizedBox(
-              width: 56,
-              height: 56,
-              child: Lottie.asset(
-                _assetPath,
-                repeat: true,
-                fit: BoxFit.contain,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
+            Padding(
+              padding: const EdgeInsets.only(right: 32),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Rotate for split view',
-                    style: theme.textTheme.titleSmall,
+                  SizedBox(
+                    width: 132,
+                    height: 132,
+                    child: Lottie.asset(
+                      _assetPath,
+                      repeat: true,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    'Turn your phone sideways to see folders and preview side by side.',
-                    style: theme.textTheme.bodySmall,
+                    'Rotate for split view',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium,
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: AppSpacing.xs),
-            IconButton(
-              visualDensity: VisualDensity.compact,
-              tooltip: 'Dismiss',
-              onPressed: onDismiss,
-              icon: const Icon(Icons.close),
+            Positioned(
+              top: -4,
+              right: -8,
+              child: IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Dismiss',
+                onPressed: onDismiss,
+                icon: const Icon(Icons.close),
+              ),
             ),
           ],
         ),
