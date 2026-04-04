@@ -72,6 +72,7 @@ We are building a mobile-first file organization app that turns file cleanup fro
     - a top scrollable section that contains the back control, title, helper text, and source options
     - a lower fixed section that contains the Next button
   - The fixed lower action area should reduce visible option space so users see roughly two source cards at a time and scroll for the rest.
+  - Connect and Method should use the approved visual `Next` button artwork rather than a generated pill substitute.
 - Permission handoff requirement:
   - After user grants folder permission, app must open Explorer immediately.
   - Do not block user behind generic "can't use this folder" style app messages.
@@ -152,6 +153,14 @@ We are building a mobile-first file organization app that turns file cleanup fro
   - Monthly price: $8.90/month.
   - Annual price: $3.90/month billed yearly.
   - USB archive access must be gated by subscription status.
+  - Subscription screen should use the approved green visual layout with:
+    - back button
+    - `Subscription` heading
+    - free card artwork
+    - annual subscription card artwork
+    - donation icon and tree-commitment text
+    - subscribe button artwork
+  - Do not add extra visible plan/status copy to that screen beyond the approved subscription mock content.
 
 ## Architecture principles (non-negotiable)
 

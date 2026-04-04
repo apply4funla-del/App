@@ -2,7 +2,7 @@ import 'package:file_tidy_app/app/app_router.dart';
 import 'package:file_tidy_app/app/dependency_container.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/use_cases/get_subscription_status_use_case.dart';
-import 'package:file_tidy_app/design_system/components/onboarding_pill_button.dart';
+import 'package:file_tidy_app/design_system/components/onboarding_asset_button.dart';
 import 'package:file_tidy_app/design_system/components/onboarding_screen.dart';
 import 'package:file_tidy_app/design_system/services/button_press_feedback.dart';
 import 'package:file_tidy_app/design_system/tokens/app_assets.dart';
@@ -78,8 +78,9 @@ class _MethodScreenState extends State<MethodScreen> {
           const SizedBox(height: AppSpacing.xl),
           SizedBox(
             width: buttonWidth,
-            child: OnboardingPillButton(
-              label: 'Next',
+            child: OnboardingAssetButton(
+              assetPath: AppAssets.nextButton,
+              semanticLabel: 'Next',
               onPressed: _selectedAction == null ? null : _continue,
             ),
           ),

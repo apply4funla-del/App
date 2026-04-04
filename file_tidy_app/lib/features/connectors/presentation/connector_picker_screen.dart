@@ -7,6 +7,7 @@ import 'package:file_tidy_app/core/use_cases/connect_connector_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/disconnect_connector_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/get_current_user_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/list_connector_states_use_case.dart';
+import 'package:file_tidy_app/design_system/components/onboarding_asset_button.dart';
 import 'package:file_tidy_app/design_system/components/onboarding_pill_button.dart';
 import 'package:file_tidy_app/design_system/services/button_press_feedback.dart';
 import 'package:file_tidy_app/design_system/tokens/app_assets.dart';
@@ -226,8 +227,9 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
                         child: Center(
                           child: SizedBox(
                             width: buttonWidth,
-                            child: OnboardingPillButton(
-                              label: 'Next',
+                            child: OnboardingAssetButton(
+                              assetPath: AppAssets.nextButton,
+                              semanticLabel: 'Next',
                               onPressed: _selectedSource == null ? null : _goToMethod,
                             ),
                           ),
