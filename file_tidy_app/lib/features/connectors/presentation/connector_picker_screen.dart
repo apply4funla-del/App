@@ -119,7 +119,10 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
     final landscapeGrid = MediaQuery.sizeOf(context).width >= 900;
     return OnboardingScreen(
       title: 'Connect',
-      onBack: () => Navigator.of(context).maybePop(),
+      onBack: () => Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRoutes.welcome,
+        (route) => false,
+      ),
       maxWidth: 1080,
       child: _loading
           ? const Center(child: CircularProgressIndicator())

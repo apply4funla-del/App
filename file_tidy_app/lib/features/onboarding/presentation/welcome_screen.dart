@@ -33,20 +33,11 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    'Sort out your files. Keep your memories close.',
+                    'Manage your life and memories.',
                     textAlign: TextAlign.center,
                     style: wide
                         ? Theme.of(context).textTheme.headlineLarge
                         : Theme.of(context).textTheme.headlineMedium,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 560),
-                    child: Text(
-                      'See what each file is before you rename it, then archive what matters without stress.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   SizedBox(
@@ -56,12 +47,6 @@ class WelcomeScreen extends StatelessWidget {
                       fit: BoxFit.contain,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-                  const _SloganLine(text: 'Simple enough for every day'),
-                  const SizedBox(height: AppSpacing.xs),
-                  const _SloganLine(text: 'Clear enough for older eyes'),
-                  const SizedBox(height: AppSpacing.xs),
-                  const _SloganLine(text: 'Careful enough for a lifetime of memories'),
                   const SizedBox(height: AppSpacing.xl),
                   ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: wide ? 360 : 420),
@@ -78,23 +63,6 @@ class WelcomeScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _SloganLine extends StatelessWidget {
-  const _SloganLine({
-    required this.text,
-  });
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      textAlign: TextAlign.center,
-      style: Theme.of(context).textTheme.titleMedium,
     );
   }
 }

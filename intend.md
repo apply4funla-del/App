@@ -48,7 +48,7 @@ We are building a mobile-first file organization app that turns file cleanup fro
   - In landscape and wider desktop layouts, primary onboarding buttons like Get Started and Continue must not span the full width of the screen.
   - Keep onboarding actions constrained to a readable width while preserving full-width behavior on narrow phone layouts.
   - Welcome, auth, connect, and method screens must use a white background and a shared simple visual style.
-  - Front page must use the Tidily wordmark, large easy-to-read Roboto text, short plain-language slogans, and a Continue action that leads into the auth choice screen.
+  - Front page must use the Tidily wordmark, one plain-language promise line, the Lottie hero, and a Continue action that leads into the auth choice screen.
   - The auth choice screen must separate "Use for free" from account creation.
   - The auth form screen must remain a separate step from the auth choice screen.
   - Connect and Method screens must visually follow the same rounded, friendly, image-led style rather than default Material cards.
