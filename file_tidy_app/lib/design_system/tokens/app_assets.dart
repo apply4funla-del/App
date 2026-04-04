@@ -17,6 +17,7 @@ class AppAssets {
   static const String freePlanCard = 'assets/branding/free_plan.png';
   static const String subscribePlanCard = 'assets/branding/subscribe_plan.png';
   static const String donation = 'assets/branding/donation.png';
+  static const String subscriptionCommitment = 'assets/branding/subscription_commitment.png';
   static const String backButton = 'assets/branding/back_button.png';
   static const String googleDriveLogo = 'assets/branding/google_drive_logo.png';
   static const String dropboxLogo = 'assets/branding/dropbox_logo.png';

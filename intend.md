@@ -162,8 +162,9 @@ We are building a mobile-first file organization app that turns file cleanup fro
     - `Subscription` heading
     - free card artwork
     - annual subscription card artwork
-    - donation icon and tree-commitment text
+    - the approved full tree-commitment artwork
     - subscribe button artwork
+  - The Free card and the annual subscription card must both be tappable/selectable.
   - Do not add extra visible plan/status copy to that screen beyond the approved subscription mock content.
 
 ## Architecture principles (non-negotiable)

@@ -22,6 +22,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   String? _email;
   bool _loading = true;
+  _SubscriptionChoice _selectedChoice = _SubscriptionChoice.annual;
 
   @override
   void initState() {
@@ -91,38 +92,32 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         const SizedBox(height: AppSpacing.xl),
                         ConstrainedBox(
                           constraints: BoxConstraints(maxWidth: contentWidth),
-                          child: Image.asset(
-                            AppAssets.freePlanCard,
-                            fit: BoxFit.contain,
+                          child: _SelectablePlanCard(
+                            assetPath: AppAssets.freePlanCard,
+                            selected: _selectedChoice == _SubscriptionChoice.free,
+                            onTap: () {
+                              setState(() => _selectedChoice = _SubscriptionChoice.free);
+                            },
                           ),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         ConstrainedBox(
                           constraints: BoxConstraints(maxWidth: contentWidth),
-                          child: Image.asset(
-                            AppAssets.subscribePlanCard,
-                            fit: BoxFit.contain,
+                          child: _SelectablePlanCard(
+                            assetPath: AppAssets.subscribePlanCard,
+                            selected: _selectedChoice == _SubscriptionChoice.annual,
+                            onTap: () {
+                              setState(() => _selectedChoice = _SubscriptionChoice.annual);
+                            },
                           ),
                         ),
                         const SizedBox(height: AppSpacing.lg),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              AppAssets.donation,
-                              width: 96,
-                              fit: BoxFit.contain,
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: Text(
-                                'Tidily commits\n10% of your\nsubscription to\nsave the trees!',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      color: Colors.black,
-                                    ),
-                              ),
-                            ),
-                          ],
+                        ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: contentWidth),
+                          child: Image.asset(
+                            AppAssets.subscriptionCommitment,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         ConstrainedBox(
@@ -131,6 +126,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             assetPath: AppAssets.subscribeButton,
                             semanticLabel: 'Subscribe',
                             onPressed: () {
+                              if (_selectedChoice == _SubscriptionChoice.free) {
+                                Navigator.of(context).maybePop();
+                                return;
+                              }
                               if (_email == null) {
                                 Navigator.of(context).pushNamed(AppRoutes.signUp);
                                 return;
@@ -149,6 +148,43 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 ),
               ),
             ),
+    );
+  }
+}
+
+enum _SubscriptionChoice { free, annual }
+
+class _SelectablePlanCard extends StatelessWidget {
+  const _SelectablePlanCard({
+    required this.assetPath,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String assetPath;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: selected ? AppColors.brandDark : Colors.transparent,
+          width: 3,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(28),
+        onTap: ButtonPressFeedback.wrap(onTap),
+        child: Image.asset(
+          assetPath,
+          fit: BoxFit.contain,
+          width: double.infinity,
+        ),
+      ),
     );
   }
 }

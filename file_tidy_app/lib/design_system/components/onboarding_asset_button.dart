@@ -36,7 +36,7 @@ class OnboardingAssetButton extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
         onTap: ButtonPressFeedback.wrap(onPressed),
-        child: child,
+        child: Center(child: child),
       ),
     );
   }
