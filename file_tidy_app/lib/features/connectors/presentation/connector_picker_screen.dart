@@ -8,7 +8,6 @@ import 'package:file_tidy_app/core/use_cases/disconnect_connector_use_case.dart'
 import 'package:file_tidy_app/core/use_cases/get_current_user_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/list_connector_states_use_case.dart';
 import 'package:file_tidy_app/design_system/components/onboarding_pill_button.dart';
-import 'package:file_tidy_app/design_system/components/onboarding_screen.dart';
 import 'package:file_tidy_app/design_system/tokens/app_assets.dart';
 import 'package:file_tidy_app/design_system/tokens/app_colors.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
@@ -119,58 +118,123 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
     final width = MediaQuery.sizeOf(context).width;
     final landscapeGrid = width >= 900;
     final buttonWidth = landscapeGrid ? 260.0 : width.clamp(220.0, 320.0);
-    return OnboardingScreen(
-      title: 'Connect',
-      onBack: () => Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRoutes.welcome,
-        (route) => false,
-      ),
-      maxWidth: 1080,
-      child: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Text(
-                  _currentUser == null
-                      ? 'Choose one source. Sign in only if you want Google Drive or Dropbox.'
-                      : 'Signed in as ${_currentUser!.email}',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                if (landscapeGrid)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return Scaffold(
+      body: SafeArea(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1080),
+                  child: Column(
                     children: [
-                      for (var index = 0; index < FileSource.values.length; index++) ...[
-                        Expanded(
-                          child: _buildConnectorCard(
-                            FileSource.values[index],
-                            compact: true,
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.md,
+                            AppSpacing.sm,
+                            AppSpacing.md,
+                            AppSpacing.md,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              SizedBox(
+                                height: width >= 720 ? 64 : 56,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(28),
+                                        onTap: () => Navigator.of(context).pushNamedAndRemoveUntil(
+                                          AppRoutes.welcome,
+                                          (route) => false,
+                                        ),
+                                        child: Image.asset(
+                                          AppAssets.backButton,
+                                          width: width >= 420 ? 46 : 40,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                    ),
+                                    Center(
+                                      child: Text(
+                                        'Connect',
+                                        textAlign: TextAlign.center,
+                                        style: width >= 420
+                                            ? Theme.of(context).textTheme.headlineMedium
+                                            : Theme.of(context).textTheme.titleLarge,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              Text(
+                                _currentUser == null
+                                    ? 'Choose one source. Sign in only if you want Google Drive or Dropbox.'
+                                    : 'Signed in as ${_currentUser!.email}',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                              if (landscapeGrid)
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    for (var index = 0; index < FileSource.values.length; index++) ...[
+                                      Expanded(
+                                        child: _buildConnectorCard(
+                                          FileSource.values[index],
+                                          compact: true,
+                                        ),
+                                      ),
+                                      if (index < FileSource.values.length - 1)
+                                        const SizedBox(width: AppSpacing.md),
+                                    ],
+                                  ],
+                                )
+                              else
+                                ...FileSource.values.map(
+                                  (source) => Padding(
+                                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                                    child: _buildConnectorCard(source),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
-                        if (index < FileSource.values.length - 1)
-                          const SizedBox(width: AppSpacing.md),
-                      ],
+                      ),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.md,
+                          AppSpacing.sm,
+                          AppSpacing.md,
+                          AppSpacing.md,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          border: Border(
+                            top: BorderSide(color: AppColors.border),
+                          ),
+                        ),
+                        child: Center(
+                          child: SizedBox(
+                            width: buttonWidth,
+                            child: OnboardingPillButton(
+                              label: 'Next',
+                              onPressed: _selectedSource == null ? null : _goToMethod,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
-                  )
-                else
-                  ...FileSource.values.map(
-                    (source) => Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                      child: _buildConnectorCard(source),
-                    ),
-                  ),
-                const SizedBox(height: AppSpacing.lg),
-                SizedBox(
-                  width: buttonWidth,
-                  child: OnboardingPillButton(
-                    label: 'Next',
-                    onPressed: _selectedSource == null ? null : _goToMethod,
                   ),
                 ),
-              ],
-            ),
+              ),
+      ),
     );
   }
 
