@@ -53,7 +53,8 @@ class _MethodScreenState extends State<MethodScreen> {
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final wide = width >= 720;
-    final buttonWidth = wide ? 260.0 : width.clamp(220.0, 320.0);
+    final availableWidth = width - (AppSpacing.md * 2);
+    final buttonWidth = wide ? 260.0 : availableWidth.clamp(220.0, 320.0);
     return OnboardingScreen(
       title: 'Method',
       onBack: () => Navigator.of(context).maybePop(),
@@ -76,8 +77,8 @@ class _MethodScreenState extends State<MethodScreen> {
             assetPath: AppAssets.manageFileOptionCard,
           ),
           const SizedBox(height: AppSpacing.xl),
-          SizedBox(
-            width: buttonWidth,
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: buttonWidth),
             child: OnboardingAssetButton(
               assetPath: AppAssets.nextButton,
               semanticLabel: 'Next',

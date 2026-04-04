@@ -119,7 +119,8 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final landscapeGrid = width >= 900;
-    final buttonWidth = landscapeGrid ? 260.0 : width.clamp(220.0, 320.0);
+    final availableWidth = width - (AppSpacing.md * 2);
+    final buttonWidth = landscapeGrid ? 260.0 : availableWidth.clamp(220.0, 320.0);
     return Scaffold(
       body: SafeArea(
         child: _loading
@@ -225,8 +226,8 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
                           ),
                         ),
                         child: Center(
-                          child: SizedBox(
-                            width: buttonWidth,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: buttonWidth),
                             child: OnboardingAssetButton(
                               assetPath: AppAssets.nextButton,
                               semanticLabel: 'Next',
