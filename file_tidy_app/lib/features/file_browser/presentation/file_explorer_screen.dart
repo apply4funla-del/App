@@ -854,15 +854,16 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   PreferredSizeWidget? _buildRenameAppBarBottom() {
     return PreferredSize(
-      preferredSize: const Size.fromHeight(84),
+      preferredSize: const Size.fromHeight(112),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.md,
-          AppSpacing.xs,
+          AppSpacing.sm,
           AppSpacing.md,
-          AppSpacing.xs,
+          AppSpacing.sm,
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             IconButton(
               icon: Icon(
@@ -915,7 +916,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label, style: Theme.of(context).textTheme.labelLarge),
+        Text(label, style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: AppSpacing.xs),
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -927,16 +928,16 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _commitInlineRename(),
                 enabled: canRename && !_renameApplying,
+                style: Theme.of(context).textTheme.bodyLarge,
                 decoration: InputDecoration(
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                   hintText: canRename ? 'Enter file name' : 'Select a file to rename',
-                  isDense: compact,
-                  contentPadding: compact
-                      ? const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm,
-                          vertical: AppSpacing.sm,
-                        )
-                      : null,
+                  hintStyle: Theme.of(context).textTheme.bodyMedium,
+                  isDense: false,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: 14,
+                  ),
                 ),
               ),
             ),

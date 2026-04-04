@@ -47,14 +47,16 @@ We are building a mobile-first file organization app that turns file cleanup fro
 - Onboarding layout requirements:
   - In landscape and wider desktop layouts, primary onboarding buttons like Get Started and Continue must not span the full width of the screen.
   - Keep onboarding actions constrained to a readable width while preserving full-width behavior on narrow phone layouts.
+  - White background is non-negotiable for the welcome screen, the Use for free / Sign up choice screen, the create-account/login screens, connect, method, and subscription.
   - Welcome, auth, connect, and method screens must use a white background and a shared simple visual style.
-  - Front page must use the Tidily wordmark, one plain-language promise line, the Lottie hero, and a Continue action that leads into the create-account page.
+  - Front page must use the Tidily wordmark, one plain-language promise line, the Lottie hero, and a Continue action that leads into the Use for free / Sign up choice screen.
   - Connect and Method screens must visually follow the same rounded, friendly, image-led style rather than default Material cards.
   - All onboarding and setup screens must be vertically scrollable so they remain usable on smaller phones.
   - Primary content should be arranged to fit a normal phone baseline around 360x800 logical pixels without forcing scroll in common cases.
   - On larger screens, artwork and spacing may scale up, but buttons and form controls must stay within readable widths rather than stretching edge to edge.
 - Sign-in requirements:
   - Sign in must be optional. Users can continue in free mode without sign-in.
+  - The second screen after Continue must remain the dedicated choice screen with the approved Use for free and Sign up actions plus the approved cloud logos.
   - Sign in must clearly explain: sign in is for Google Drive, Dropbox, and plan restore.
   - Sign-in must use modular auth architecture and store account data in Supabase.
   - Free mode must remain available when users skip sign-in.
@@ -85,10 +87,12 @@ We are building a mobile-first file organization app that turns file cleanup fro
   - Both panels must be independently scrollable.
   - In portrait/narrow phone layouts, Explorer should show a small non-blocking rotation hint that encourages landscape split view.
   - Rotation hint should use a Lottie animation, should not appear in landscape, and should be dismissible.
-  - Rotation hint copy must stay minimal: show only "Rotate for split view" with a larger Lottie inside a simple square-style message box.
+  - Rotation hint copy must stay minimal: show only "Rotate for better view" with a larger Lottie inside a simple square-style message box.
   - User taps a file name in left panel to open it on right panel.
   - Rename must be inline in Explorer (no modal sheet required).
   - Rename field must stay visible in the top Explorer navigator area, above the split panels.
+  - Rename typography must stay consistent with the shared app font and sizing system.
+  - Keep a visible gap between the rename strip and the rotation hint so the hint never clips the rename text field.
   - Explorer controls bar must stay collapsed by default and expand only when user explicitly opens it from the top area.
   - Rename input is a text box with locked file extension shown outside the box.
   - Extension cannot be edited by user.

@@ -23,7 +23,7 @@ class ExplorerOrientationHint extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.fromLTRB(
           AppSpacing.md,
-          AppSpacing.sm,
+          AppSpacing.md,
           AppSpacing.md,
           0,
         ),
@@ -43,17 +43,23 @@ class ExplorerOrientationHint extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(
-                    width: 240,
-                    height: 240,
-                    child: Lottie.asset(
-                      _assetPath,
-                      repeat: true,
-                      fit: BoxFit.contain,
+                    width: double.infinity,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: SizedBox(
+                        width: 384,
+                        height: 384,
+                        child: Lottie.asset(
+                          _assetPath,
+                          repeat: true,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    'Rotate for split view',
+                    'Rotate for better view',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.titleMedium,
                   ),

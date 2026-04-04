@@ -1,6 +1,7 @@
 import 'package:file_tidy_app/core/models/explorer_launch_config.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/models/rename_operation_mode.dart';
+import 'package:file_tidy_app/features/auth/presentation/auth_entry_screen.dart';
 import 'package:file_tidy_app/features/auth/presentation/sign_in_screen.dart';
 import 'package:file_tidy_app/features/connectors/presentation/connector_picker_screen.dart';
 import 'package:file_tidy_app/features/file_browser/presentation/file_explorer_screen.dart';
@@ -54,7 +55,7 @@ class AppRouter {
         final initialCreateAccount = settings.arguments is bool ? settings.arguments as bool : false;
         return _material(SignInScreen(initialCreateAccount: initialCreateAccount));
       case AppRoutes.signUp:
-        return _material(const SignInScreen(initialCreateAccount: true));
+        return _material(const AuthEntryScreen());
       case AppRoutes.connectorPicker:
         return _material(const ConnectorPickerScreen());
       case AppRoutes.method:
