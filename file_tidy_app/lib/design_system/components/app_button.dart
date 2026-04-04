@@ -1,3 +1,4 @@
+import 'package:file_tidy_app/design_system/services/button_press_feedback.dart';
 import 'package:file_tidy_app/design_system/tokens/app_colors.dart';
 import 'package:file_tidy_app/design_system/tokens/app_radii.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
@@ -36,7 +37,7 @@ class AppButton extends StatelessWidget {
     );
 
     return FilledButton(
-      onPressed: onPressed,
+      onPressed: ButtonPressFeedback.wrap(onPressed),
       style: style,
       child: Text(label),
     );

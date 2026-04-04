@@ -48,9 +48,7 @@ We are building a mobile-first file organization app that turns file cleanup fro
   - In landscape and wider desktop layouts, primary onboarding buttons like Get Started and Continue must not span the full width of the screen.
   - Keep onboarding actions constrained to a readable width while preserving full-width behavior on narrow phone layouts.
   - Welcome, auth, connect, and method screens must use a white background and a shared simple visual style.
-  - Front page must use the Tidily wordmark, one plain-language promise line, the Lottie hero, and a Continue action that leads into the auth choice screen.
-  - The auth choice screen must separate "Use for free" from account creation.
-  - The auth form screen must remain a separate step from the auth choice screen.
+  - Front page must use the Tidily wordmark, one plain-language promise line, the Lottie hero, and a Continue action that leads into the create-account page.
   - Connect and Method screens must visually follow the same rounded, friendly, image-led style rather than default Material cards.
   - All onboarding and setup screens must be vertically scrollable so they remain usable on smaller phones.
   - Primary content should be arranged to fit a normal phone baseline around 360x800 logical pixels without forcing scroll in common cases.
@@ -60,6 +58,12 @@ We are building a mobile-first file organization app that turns file cleanup fro
   - Sign in must clearly explain: sign in is for Google Drive, Dropbox, and plan restore.
   - Sign-in must use modular auth architecture and store account data in Supabase.
   - Free mode must remain available when users skip sign-in.
+  - The auth switch/toggle must not be used for older users.
+  - Auth must use two explicit pages/actions instead:
+    - create-account page with a dedicated "I already have an account" button
+    - login page with a dedicated "Log in to account" button and password-help button
+  - Auth pages must not add extra helper copy beyond the approved elements shown in the signed-off mockups.
+  - Button presses should play the approved tap sound through a shared reusable button feedback layer.
 - Connect Source layout requirements:
   - Portrait layout can remain stacked.
   - In landscape/wide layouts, Phone, Google Drive, and Dropbox must appear as three horizontal square-style option boxes.

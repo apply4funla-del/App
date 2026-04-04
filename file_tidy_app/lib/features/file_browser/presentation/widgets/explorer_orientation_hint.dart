@@ -1,3 +1,4 @@
+import 'package:file_tidy_app/design_system/services/button_press_feedback.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
@@ -42,8 +43,8 @@ class ExplorerOrientationHint extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(
-                    width: 132,
-                    height: 132,
+                    width: 240,
+                    height: 240,
                     child: Lottie.asset(
                       _assetPath,
                       repeat: true,
@@ -65,7 +66,7 @@ class ExplorerOrientationHint extends StatelessWidget {
               child: IconButton(
                 visualDensity: VisualDensity.compact,
                 tooltip: 'Dismiss',
-                onPressed: onDismiss,
+                onPressed: ButtonPressFeedback.wrap(onDismiss),
                 icon: const Icon(Icons.close),
               ),
             ),

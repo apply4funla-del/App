@@ -12,4 +12,6 @@ class AppColors {
   static const Color accentBlue = Color(0xFF72C8F2);
   static const Color border = Color(0xFFE8E8E8);
   static const Color warning = Color(0xFFCE7A12);
+  static const Color authBackground = Color(0xFF5B8057);
+  static const Color link = Color(0xFF6D71D8);
 }

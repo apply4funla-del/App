@@ -8,6 +8,7 @@ import 'package:file_tidy_app/core/use_cases/disconnect_connector_use_case.dart'
 import 'package:file_tidy_app/core/use_cases/get_current_user_use_case.dart';
 import 'package:file_tidy_app/core/use_cases/list_connector_states_use_case.dart';
 import 'package:file_tidy_app/design_system/components/onboarding_pill_button.dart';
+import 'package:file_tidy_app/design_system/services/button_press_feedback.dart';
 import 'package:file_tidy_app/design_system/tokens/app_assets.dart';
 import 'package:file_tidy_app/design_system/tokens/app_colors.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
@@ -147,9 +148,11 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
                                       alignment: Alignment.centerLeft,
                                       child: InkWell(
                                         borderRadius: BorderRadius.circular(28),
-                                        onTap: () => Navigator.of(context).pushNamedAndRemoveUntil(
-                                          AppRoutes.welcome,
-                                          (route) => false,
+                                        onTap: ButtonPressFeedback.wrap(
+                                          () => Navigator.of(context).pushNamedAndRemoveUntil(
+                                            AppRoutes.welcome,
+                                            (route) => false,
+                                          ),
                                         ),
                                         child: Image.asset(
                                           AppAssets.backButton,
@@ -286,7 +289,7 @@ class _ConnectorPickerScreenState extends State<ConnectorPickerScreen> {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(28),
-        onTap: () => setState(() => _selectedSource = source),
+        onTap: ButtonPressFeedback.wrap(() => setState(() => _selectedSource = source)),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: SizedBox(

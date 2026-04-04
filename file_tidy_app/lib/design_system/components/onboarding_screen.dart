@@ -1,3 +1,4 @@
+import 'package:file_tidy_app/design_system/services/button_press_feedback.dart';
 import 'package:file_tidy_app/design_system/tokens/app_assets.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
 import 'package:flutter/material.dart';
@@ -52,7 +53,7 @@ class OnboardingScreen extends StatelessWidget {
                                 alignment: Alignment.centerLeft,
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(28),
-                                  onTap: onBack,
+                                  onTap: ButtonPressFeedback.wrap(onBack),
                                   child: Image.asset(
                                     AppAssets.backButton,
                                     width: width >= 420 ? 46 : 40,

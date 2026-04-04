@@ -4,6 +4,7 @@ import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/use_cases/get_subscription_status_use_case.dart';
 import 'package:file_tidy_app/design_system/components/onboarding_pill_button.dart';
 import 'package:file_tidy_app/design_system/components/onboarding_screen.dart';
+import 'package:file_tidy_app/design_system/services/button_press_feedback.dart';
 import 'package:file_tidy_app/design_system/tokens/app_assets.dart';
 import 'package:file_tidy_app/design_system/tokens/app_colors.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
@@ -103,7 +104,7 @@ class _MethodScreenState extends State<MethodScreen> {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(32),
-        onTap: () => setState(() => _selectedAction = id),
+        onTap: ButtonPressFeedback.wrap(() => setState(() => _selectedAction = id)),
         child: Image.asset(
           assetPath,
           fit: BoxFit.contain,

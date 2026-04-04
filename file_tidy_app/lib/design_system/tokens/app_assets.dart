@@ -7,6 +7,8 @@ class AppAssets {
   static const String signUpButton = 'assets/branding/sign_up_button.png';
   static const String useForFreeButton = 'assets/branding/use_for_free_button.png';
   static const String signInButton = 'assets/branding/sign_in_button.png';
+  static const String loginToAccountButton = 'assets/branding/login_to_account_button.png';
+  static const String iAlreadyHaveAccountButton = 'assets/branding/i_already_have_account_button.png';
   static const String passwordHelpButton = 'assets/branding/i_need_my_password_button.png';
   static const String archiveOptionCard = 'assets/branding/archive_button.png';
   static const String manageFileOptionCard = 'assets/branding/managefile_button.png';

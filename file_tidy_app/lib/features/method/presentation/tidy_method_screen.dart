@@ -3,6 +3,7 @@ import 'package:file_tidy_app/core/models/explorer_launch_config.dart';
 import 'package:file_tidy_app/core/models/file_item.dart';
 import 'package:file_tidy_app/core/models/rename_operation_mode.dart';
 import 'package:file_tidy_app/design_system/components/app_button.dart';
+import 'package:file_tidy_app/design_system/services/button_press_feedback.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
 import 'package:flutter/material.dart';
 
@@ -89,7 +90,7 @@ class _TidyMethodScreenState extends State<TidyMethodScreen> {
         ),
         title: Text(title),
         subtitle: Text(subtitle),
-        onTap: () => setState(() => _mode = mode),
+        onTap: ButtonPressFeedback.wrap(() => setState(() => _mode = mode)),
       ),
     );
   }

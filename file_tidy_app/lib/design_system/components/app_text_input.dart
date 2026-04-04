@@ -25,6 +25,8 @@ class AppTextInput extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         hintText: hintText,
+        floatingLabelBehavior: FloatingLabelBehavior.never,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
     );
   }
