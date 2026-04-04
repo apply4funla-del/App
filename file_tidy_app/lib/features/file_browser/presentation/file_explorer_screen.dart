@@ -14,6 +14,7 @@ import 'package:file_tidy_app/core/use_cases/rename_file_use_case.dart';
 import 'package:file_tidy_app/design_system/components/app_button.dart';
 import 'package:file_tidy_app/design_system/tokens/app_spacing.dart';
 import 'package:file_tidy_app/features/preview/presentation/preview_pane.dart';
+import 'package:file_tidy_app/features/file_browser/presentation/widgets/explorer_orientation_hint.dart';
 import 'package:flutter/material.dart';
 
 enum _ExplorerSortType { name, modifiedDate, fileSize }
@@ -56,6 +57,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   String _renameLockedExtension = '';
   bool _renameApplying = false;
   bool _explorerToolbarVisible = false;
+  bool _dismissedOrientationHint = false;
   _ExplorerSortType _sortType = _ExplorerSortType.name;
 
   List<FileItem> get _currentPhoneEntries {
@@ -656,6 +658,11 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final showOrientationHint = size.height > size.width &&
+        size.width < 720 &&
+        !_dismissedOrientationHint;
+
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: _explorerToolbarVisible ? kToolbarHeight : 0,
@@ -734,7 +741,17 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _buildSplitExplorer(),
+          : Column(
+              children: [
+                if (showOrientationHint)
+                  ExplorerOrientationHint(
+                    onDismiss: () => setState(() => _dismissedOrientationHint = true),
+                  ),
+                Expanded(
+                  child: _buildSplitExplorer(),
+                ),
+              ],
+            ),
       bottomNavigationBar: _buildExplorerBottomBar(),
     );
   }

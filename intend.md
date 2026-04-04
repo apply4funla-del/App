@@ -66,6 +66,8 @@ We are building a mobile-first file organization app that turns file cleanup fro
   - Right panel shows selected file details/content only, with no action buttons inside the preview area.
   - Right panel must be independently scrollable and maximize visible file area.
   - Both panels must be independently scrollable.
+  - In portrait/narrow phone layouts, Explorer should show a small non-blocking rotation hint that encourages landscape split view.
+  - Rotation hint should use a Lottie animation, should not appear in landscape, and should be dismissible.
   - User taps a file name in left panel to open it on right panel.
   - Rename must be inline in Explorer (no modal sheet required).
   - Rename field must stay visible in the top Explorer navigator area, above the split panels.
